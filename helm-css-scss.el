@@ -5,8 +5,8 @@
 ;; helm-css-scss-mode.el --- SCSS Selector with helm interface
 ;;
 ;; Version: 1.0
-;; Author: Shingo Fukuyama <xxxx@gmail.com> - http://fukuyama.co
-;; Repository: http://github.com/fxbois/web-mode
+;; Author: Shingo Fukuyama - http://fukuyama.co
+;; Repository: https://github.com/ShingoFukuyama/helm-css-scss
 ;; Created: Oct 18 2013
 ;; Keywords: scss css mode helm
 ;;
