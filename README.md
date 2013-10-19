@@ -4,11 +4,7 @@ This program makes your CSS/SCSS coding faster and easier than ever. You can see
 
 ![helm-css-scss](https://github.com/ShingoFukuyama/helm-css-scss/raw/master/image/helm-css-scss.png)
 
-<<<<<<< HEAD
 If you prefer `anything.el` just consider below `helm`s as `anything`.
-=======
-If you prefer `anything.el` consider below `helm`s as `anything`.
->>>>>>> ac74a0aaeaf349308f1f06ab5e700d7e15eeab59
 
 ### Install
 
