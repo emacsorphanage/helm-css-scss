@@ -2,6 +2,8 @@
 
 This program makes your CSS/SCSS coding faster and easier than ever. You can see all selectors at once powerd by `helm.el` or `anything.el`. 
 
+[Quick look! 48 second Youtube live coding](http://www.youtube.com/watch?v=25Fqi-4WL4o&feature=player_embedded)
+
 ![helm-css-scss](https://github.com/ShingoFukuyama/helm-css-scss/raw/master/image/helm-css-scss.png)
 
 If you prefer `anything.el` just consider below `helm`s as `anything`.
