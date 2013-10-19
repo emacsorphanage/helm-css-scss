@@ -43,28 +43,30 @@ Or on the spot:
 
 ### Example config
 
-    ```elisp
-    (require 'helm-config) ;; https://github.com/emacs-helm/helm
-    (add-to-list 'load-path
-                 (concat "~/.emacs.d/elisp/helm-css-scss"))
-    (require 'helm-css-scss) 
-    ;; Allow comment inserting depth at each end of a brace
-    (setq helm-css-scss-insert-close-comment-depth 2) 
-    ;; Set local keybind map for css-mode / scss-mode
-    (dolist ($hook '(css-mode-hook scss-mode-hook))
-      (add-hook
-       $hook
-       (lambda ()
-         (local-set-key (kbd "s-i") ;; [command + i]
-                        'helm-css-scss)
-         (local-set-key (kbd "s-c") ;; [command + c]
-                        'helm-css-scss-insert-close-comment)
-         (local-set-key (kbd "s-n") ;; [command + n]
-                        'helm-css-scss-move-and-echo-next-selector)
-         (local-set-key (kbd "s-p") ;; [command + p]
-                        'helm-css-scss-move-and-echo-previous-selector)
-               )))
-    ```
+```elisp
+(require 'helm-config) ;; https://github.com/emacs-helm/helm
+(add-to-list 'load-path
+             (concat "~/.emacs.d/elisp/helm-css-scss"))
+(require 'helm-css-scss)
+
+;; Allow comment inserting depth at each end of a brace
+(setq helm-css-scss-insert-close-comment-depth 2)
+
+;; Set local keybind map for css-mode / scss-mode
+(dolist ($hook '(css-mode-hook scss-mode-hook))
+  (add-hook
+   $hook
+   (lambda ()
+     (local-set-key (kbd "s-i") ;; [command + i]
+                    'helm-css-scss)
+     (local-set-key (kbd "s-c") ;; [command + c]
+                    'helm-css-scss-insert-close-comment)
+     (local-set-key (kbd "s-n") ;; [command + n]
+                    'helm-css-scss-move-and-echo-next-selector)
+     (local-set-key (kbd "s-p") ;; [command + p]
+                    'helm-css-scss-move-and-echo-previous-selector)
+           )))
+```
 
 ### Environment
 
