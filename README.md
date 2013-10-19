@@ -47,11 +47,9 @@ Or on the spot:
     (require 'helm-config) ;; https://github.com/emacs-helm/helm
     (add-to-list 'load-path
                  (concat "~/.emacs.d/elisp/helm-css-scss"))
-    (require 'helm-css-scss)
-
+    (require 'helm-css-scss) 
     ;; Allow comment inserting depth at each end of a brace
-    (setq helm-css-scss-insert-close-comment-depth 2)
-
+    (setq helm-css-scss-insert-close-comment-depth 2) 
     ;; Set local keybind map for css-mode / scss-mode
     (dolist ($hook '(css-mode-hook scss-mode-hook))
       (add-hook
