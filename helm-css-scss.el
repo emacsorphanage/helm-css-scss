@@ -5,8 +5,8 @@
 ;; helm-css-scss-mode.el --- SCSS Selector with helm interface
 ;;
 ;; Version: 1.0
-;; Author: Shingo Fukuyama <xxxx@gmail.com> - http://fukuyama.co
-;; Repository: http://github.com/fxbois/web-mode
+;; Author: Shingo Fukuyama - http://fukuyama.co
+;; Repository: https://github.com/ShingoFukuyama/helm-css-scss
 ;; Created: Oct 18 2013
 ;; Keywords: scss css mode helm
 ;;
@@ -253,6 +253,7 @@ If $noexcursion is not-nil cursor doesn't move."
              "No more exist the previous target from here"))))
 
 ;;; helm -----------------------------
+
 (defun helm-c-source-helm-css-scss ($list)
   `((name . "SCSS Selectors")
     (candidates . ,$list)
@@ -261,17 +262,53 @@ If $noexcursion is not-nil cursor doesn't move."
             ("Goto close brace" . (lambda (po) (goto-char (nth 1 po)))))
     ))
 
+(defvar helm-css-scss-synchronizing-window nil
+  "Store window identity for synchronizing")
+(defun helm-css-scss-synchronizing-position ()
+  (with-helm-window
+    (let* ((source (helm-get-current-source))
+           (select (helm-css-scss-trim-whitespace (thing-at-point 'line)))
+           (candidates (assoc-default 'candidates source))
+           (info (assoc-default select candidates))
+           )
+      ;; Synchronizing selecter list to buffer
+      (with-selected-window helm-css-scss-synchronizing-window
+        (goto-char (car info)))
+      )))
+
+;; Store function to restore later
+(setq helm-css-scss-tmp helm-display-function)
+
 (defun helm-css-scss ()
   (interactive)
-  (let (($list
-         (loop for ($sel $beg $end $dep) in (helm-css-scss-selector-hash-to-list)
-               collect
-               (list (mapconcat 'identity $sel " ") $beg $end) into $res
-               finally return $res
-               )))
-    (helm :sources (helm-c-source-helm-css-scss $list)
-          :buffer "*Helm Css SCSS*"
-          :candidate-number-limit 999)
-    ))
+  (setq helm-css-scss-synchronizing-window (selected-window))
+  (unwind-protect
+      (let (($list
+             (loop for ($sel $beg $end $dep)
+                   in (helm-css-scss-selector-hash-to-list)
+                   collect
+                   (list (mapconcat 'identity $sel " ") $beg $end)
+                   into $res
+                   finally return $res
+                   )))
+        ;; Modify window split function temporary
+        (setq helm-display-function
+              (lambda (buf)
+                (split-window-horizontally)
+                (other-window 1)
+                (switch-to-buffer buf)))
+        ;; For synchronizing position
+        (add-hook 'helm-move-selection-after-hook
+                  'helm-css-scss-synchronizing-position)
+        ;; Execute helm
+        (helm :sources (helm-c-source-helm-css-scss $list)
+              :buffer "*Helm Css SCSS*"
+              :candidate-number-limit 999)
+        ;; Restore helm's hook and window function
+        (progn
+          (remove-hook 'helm-move-selection-after-hook
+                       'helm-css-scss-synchronizing-position)
+          (setq helm-display-function helm-css-scss-tmp))
+        )))
 
 (provide 'helm-css-scss)
