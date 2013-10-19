@@ -50,5 +50,5 @@ I've confirmed working this program under the following environment.
 * Mac OSX 10.8.5 with Cocoa Emacs version 24.3.1
 
 And each environment with following external elisp. 
-`helm.el`  version 20130606.946 
-`anything` version 20130606.946
+    `helm.el`  version 20130606.946 
+    `anything` version 20131016.820
