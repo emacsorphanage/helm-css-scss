@@ -5,8 +5,8 @@
 ;; anything-css-scss-mode.el --- SCSS Selector with anything interface
 ;;
 ;; Version: 1.0
-;; Author: Shingo Fukuyama <xxxx@gmail.com> - http://fukuyama.co
-;; Repository: http://github.com/fxbois/web-mode
+;; Author: Shingo Fukuyama - http://fukuyama.co
+;; Repository: https://github.com/ShingoFukuyama/anything-css-scss
 ;; Created: Oct 18 2013
 ;; Keywords: scss css mode anything
 ;;
@@ -253,6 +253,7 @@ If $noexcursion is not-nil cursor doesn't move."
              "No more exist the previous target from here"))))
 
 ;;; anything -----------------------------
+
 (defun anything-c-source-anything-css-scss ($list)
   `((name . "SCSS Selectors")
     (candidates . ,$list)
@@ -261,17 +262,53 @@ If $noexcursion is not-nil cursor doesn't move."
             ("Goto close brace" . (lambda (po) (goto-char (nth 1 po)))))
     ))
 
+(defvar anything-css-scss-synchronizing-window nil
+  "Store window identity for synchronizing")
+(defun anything-css-scss-synchronizing-position ()
+  (with-anything-window
+    (let* ((source (anything-get-current-source))
+           (select (anything-css-scss-trim-whitespace (thing-at-point 'line)))
+           (candidates (assoc-default 'candidates source))
+           (info (assoc-default select candidates))
+           )
+      ;; Synchronizing selecter list to buffer
+      (with-selected-window anything-css-scss-synchronizing-window
+        (goto-char (car info)))
+      )))
+
+;; Store function to restore later
+(setq anything-css-scss-tmp anything-display-function)
+
 (defun anything-css-scss ()
   (interactive)
-  (let (($list
-         (loop for ($sel $beg $end $dep) in (anything-css-scss-selector-hash-to-list)
-               collect
-               (list (mapconcat 'identity $sel " ") $beg $end) into $res
-               finally return $res
-               )))
-    (anything :sources (anything-c-source-anything-css-scss $list)
-          :buffer "*Anything Css SCSS*"
-          :candidate-number-limit 999)
-    ))
+  (setq anything-css-scss-synchronizing-window (selected-window))
+  (unwind-protect
+      (let (($list
+             (loop for ($sel $beg $end $dep)
+                   in (anything-css-scss-selector-hash-to-list)
+                   collect
+                   (list (mapconcat 'identity $sel " ") $beg $end)
+                   into $res
+                   finally return $res
+                   )))
+        ;; Modify window split function temporary
+        (setq anything-display-function
+              (lambda (buf)
+                (split-window-horizontally)
+                (other-window 1)
+                (switch-to-buffer buf)))
+        ;; For synchronizing position
+        (add-hook 'anything-move-selection-after-hook
+                  'anything-css-scss-synchronizing-position)
+        ;; Execute anything
+        (anything :sources (anything-c-source-anything-css-scss $list)
+              :buffer "*Anything Css SCSS*"
+              :candidate-number-limit 999)
+        ;; Restore anything's hook and window function
+        (progn
+          (remove-hook 'anything-move-selection-after-hook
+                       'anything-css-scss-synchronizing-position)
+          (setq anything-display-function anything-css-scss-tmp))
+        )))
 
 (provide 'anything-css-scss)

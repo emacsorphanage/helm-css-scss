@@ -4,7 +4,7 @@ This program makes your CSS/SCSS coding faster and easier than ever. You can see
 
 ![helm-css-scss](https://github.com/ShingoFukuyama/helm-css-scss/raw/master/image/helm-css-scss.png)
 
-If you prefer `anything.el` consider below `helm`s as `anything`.
+If you prefer `anything.el` just consider below `helm`s as `anything`.
 
 ### Install
 
@@ -25,7 +25,10 @@ If you prefer `anything.el` consider below `helm`s as `anything`.
 
 #### `helm-css-scss`
 
-Show all selectors and choose one of those and then move to where there is. This function show a few more options pressing `TAB` key when you choose a selector.
+Show all selectors and choose one of those and then move to where it is. This function show a few more options pressing `TAB` key when you choose a selector. 
+
+Add exciting feature! While you choosing any selector from selectors list up and down, synchronize your buffer's cursor position. You'll be like it.
+
 
 #### `helm-css-scss-insert-close-comment`
 
@@ -37,3 +40,15 @@ In SCSS you can specify a nest depth value in advance:
 Or on the spot:
 
 `C-u 2 M-x helm-css-scss-insert-close-comment` 
+
+### Environment
+
+I've confirmed working this program under the following environment.
+
+* Ubuntu 12.04 LTS  with Emacs version 24.3.1
+* Mac OSX 10.7.5 with Cocoa Emacs version 24.3.1
+* Mac OSX 10.8.5 with Cocoa Emacs version 24.3.1
+
+And each environment with following external elisp. 
+`helm.el`  version 20130606.946 
+`anything` version 20130606.946
