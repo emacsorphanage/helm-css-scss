@@ -25,7 +25,10 @@ If you prefer `anything.el` just consider below `helm`s as `anything`.
 
 #### `helm-css-scss`
 
-Show all selectors and choose one of those and then move to where there is. This function show a few more options pressing `TAB` key when you choose a selector.
+Show all selectors and choose one of those and then move to where it is. This function show a few more options pressing `TAB` key when you choose a selector. 
+
+Add exciting feature! While you choosing any selector from selectors list up and down, synchronize your buffer's cursor position. You'll be like it.
+
 
 #### `helm-css-scss-insert-close-comment`
 
