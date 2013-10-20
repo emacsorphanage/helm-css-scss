@@ -89,10 +89,10 @@ And each environment with following external elisp.
 
 I use default css-mode and [scss-mode](https://github.com/antonj/scss-mode). 
 
-Accoding to [Google HTML/CSS Style Guide](http://google-styleguide.googlecode.com/svn/trunk/htmlcssguide.xml#CSS_Quotation_Marks), it says Do not use quotation marks in `url()`. But url with "http://..." and Data URL scheme which including "//" break the syntax of css-mode and scss-mode so helm-css-scss also affected. 
+According to [Google HTML/CSS Style Guide](http://google-styleguide.googlecode.com/svn/trunk/htmlcssguide.xml#CSS_Quotation_Marks), it says Do not use quotation marks in `url()`. But URLs like "http://..." and Data URL schemes which including "//" break the syntax of css-mode and scss-mode so helm-css-scss also affected. 
 
-It no probrem if you wrap those with single/double quotation.
+It no problem if you wrap those with single or double quotation.
 
 ### Anything.el
 
-I'm not sure but helm-css-scss would work the same way when you replace all "helm" strings in `helm-css-scss.el` to "anything".
+I'm not sure but helm-css-scss would work the same way when you just replace all "helm" strings in `helm-css-scss.el` to "anything".
