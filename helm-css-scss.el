@@ -1,14 +1,13 @@
-;;; -*- coding: utf-8; lexical-binding: t -*-
+;;; helm-css-scss.el --- SCSS Selector with helm interface -*- coding: utf-8; lexical-binding: t -*-
 ;;
 ;; Copyright (C) 2013 by Shingo Fukuyama
 ;;
-;; helm-css-scss-mode.el --- SCSS Selector with helm interface
-;;
 ;; Version: 1.0
 ;; Author: Shingo Fukuyama - http://fukuyama.co
-;; Repository: https://github.com/ShingoFukuyama/helm-css-scss
+;; URL: https://github.com/ShingoFukuyama/helm-css-scss
 ;; Created: Oct 18 2013
 ;; Keywords: scss css mode helm
+;; Package-Requires: ((helm "1.0") (emacs "24"))
 ;;
 ;; This program is free software; you can redistribute it and/or
 ;; modify it under the terms of the GNU General Public License as
@@ -36,6 +35,8 @@
 ;;   Jump back latest position
 ;;
 ;;
+
+;;; Code:
 
 (eval-when-compile (require 'cl))
 
@@ -352,3 +353,4 @@ If $noexcursion is not-nil cursor doesn't move."
         )))
 
 (provide 'helm-css-scss)
+;;; helm-css-scss.el ends here
