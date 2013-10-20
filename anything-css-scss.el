@@ -6,7 +6,7 @@
 ;;
 ;; Version: 1.0
 ;; Author: Shingo Fukuyama - http://fukuyama.co
-;; Repository: https://github.com/ShingoFukuyama/anything-css-scss
+;; Repository: https://github.com/ShingoFukuyama/helm-css-scss
 ;; Created: Oct 18 2013
 ;; Keywords: scss css mode anything
 ;;
@@ -31,13 +31,20 @@
 ;;   Insert inline comment like " //__ comment" at the next of
 ;;   a close brace "}". If it's aleardy there, update it.
 ;;   You can also specify a nest $depth of selector.
+;;
+;; TODO:
+;;   Jump back latest position
+;;
+;;
 
-(eval-when-compile
-  (require 'cl))
+(eval-when-compile (require 'cl))
+
 (require 'anything)
 
 ;;; config -----------------------------
 (defvar anything-css-scss-insert-close-comment-depth nil)
+
+(defvar anything-css-scss-split-window-vertically nil)
 
 ;;; common parts -----------------------------
 (defun anything-css-scss-nthcar ($i $l)
@@ -66,7 +73,7 @@
       (delete-region (match-beginning 0) (match-end 0))
       )))
 
-;;; comment-p -----------------------------
+;;; scan selector -----------------------------
 (defun* anything-css-scss-asterisk-comment-p (&optional $point)
   "Check whether $point within /* */ or not."
   (or $point (setq $point (point)))
@@ -99,6 +106,38 @@
   (or $point (setq $point (point)))
   (or (anything-css-scss-slash-comment-p $point)
       (anything-css-scss-asterisk-comment-p $point)))
+
+(defun anything-css-scss-selector-to-hash ()
+  (interactive)
+  (let ($s $beg ($end nil)
+        $h $n ($max nil) ($sl nil))
+    (setq $h (make-hash-table :test 'equal))
+    (save-excursion
+      (goto-char (point-min))
+      (while (setq $s (anything-css-scss-selector-next))
+        (setq $beg (point))
+        (setq $end (scan-sexps $beg 1))
+
+        (setq $max (cons $end $max))
+        (setq $max (mapcar (lambda (x)
+                             (if (< x $beg)
+                                 nil
+                               x))
+                           $max))
+        (setq $max (delq nil $max))
+        (setq $n (length $max))
+        (if (<= $n (length $sl))
+            (loop repeat (- (1+ (length $sl)) $n) do (pop $sl)))
+        (setq $sl (cons $s $sl))
+        (puthash (reverse $sl) (list $beg $end $n) $h)
+        ))
+    $h))
+
+(defun anything-css-scss-selector-hash-to-list ()
+  (let ($hash)
+    (setq $hash (anything-css-scss-selector-to-hash))
+    (loop for $k being hash-key in $hash using (hash-values $v)
+          collect (cons $k $v))))
 
 ;;; core -----------------------------
 (defun anything-css-scss--extract-selector ()
@@ -180,38 +219,6 @@ If $noexcursion is not-nil cursor doesn't move."
       $ret)
     ))
 
-(defun anything-css-scss-selector-to-hash ()
-  (interactive)
-  (let ($s $beg ($end nil)
-        $h $n ($max nil) ($sl nil))
-    (setq $h (make-hash-table :test 'equal))
-    (save-excursion
-      (goto-char (point-min))
-      (while (setq $s (anything-css-scss-selector-next))
-        (setq $beg (point))
-        (setq $end (scan-sexps $beg 1))
-
-        (setq $max (cons $end $max))
-        (setq $max (mapcar (lambda (x)
-                             (if (< x $beg)
-                                 nil
-                               x))
-                           $max))
-        (setq $max (delq nil $max))
-        (setq $n (length $max))
-        (if (<= $n (length $sl))
-            (loop repeat (- (1+ (length $sl)) $n) do (pop $sl)))
-        (setq $sl (cons $s $sl))
-        (puthash (reverse $sl) (list $beg $end $n) $h)
-        ))
-    $h))
-
-(defun anything-css-scss-selector-hash-to-list ()
-  (let ($hash)
-    (setq $hash (anything-css-scss-selector-to-hash))
-    (loop for $k being hash-key in $hash using (hash-values $v)
-          collect (cons $k $v))))
-
 (defun* anything-css-scss-insert-close-comment (&optional $depth)
   (interactive "P")
   (setq $depth (or $depth
@@ -235,6 +242,29 @@ If $noexcursion is not-nil cursor doesn't move."
                  (insert (format " //__ %s" $sel))))
       )))
 
+(defun anything-css-scss-current-selector (&optional $list $point)
+  "Return selector that $point is in"
+  (unless $list (setq $list (anything-css-scss-selector-hash-to-list)))
+  (or $point (setq $point (point)))
+  (let ($s)
+    (setq $s (loop for ($sel $beg $end $dep) in $list
+                   if (and (< $point $end) (>= $point $beg))
+                   collect (list $dep $sel) into $res
+                   finally return $res))
+    ;; Get the deepest selector
+    (setq $s (cdr (car (sort* $s '> :key 'car))))
+    ;; (mapconcat 'identity $s " ")
+    (mapconcat 'identity (car $s) " ")
+    ))
+
+(defun anything-css-scss-move-and-echo-previous-selector ()
+  (interactive)
+  (let ($s)
+    (message (if (setq $s (anything-css-scss-selector-previous))
+               $s
+             (goto-char (point-min))
+             "No more exist the previous target from here"))))
+
 ;;; option -----------------------------
 (defun anything-css-scss-move-and-echo-next-selector ()
   (interactive)
@@ -257,44 +287,53 @@ If $noexcursion is not-nil cursor doesn't move."
 (defun anything-c-source-anything-css-scss ($list)
   `((name . "SCSS Selectors")
     (candidates . ,$list)
-    ;(candidates-in-buffer)
-    (action ("Goto open brace"  . (lambda (po) (goto-char (car po))))
-            ("Goto close brace" . (lambda (po) (goto-char (nth 1 po)))))
+    (action ("Goto open brace"  . (lambda ($po) (goto-char (car $po))))
+            ("Goto close brace" . (lambda ($po) (goto-char (nth 1 $po)))))
     ))
+
+(defvar anything-css-scss-last-point nil
+  "For jump back once")
+
+(defun anything-css-scss-back-to-last-point ()
+  (interactive)
+  (when anything-css-scss-last-point
+    (let (($po (point)))
+      (goto-char anything-css-scss-last-point)
+      (setq anything-css-scss-last-point $po))))
 
 (defvar anything-css-scss-synchronizing-window nil
   "Store window identity for synchronizing")
 (defun anything-css-scss-synchronizing-position ()
   (with-anything-window
-    (let* ((source (anything-get-current-source))
-           (select (anything-css-scss-trim-whitespace (thing-at-point 'line)))
-           (candidates (assoc-default 'candidates source))
-           (info (assoc-default select candidates))
-           )
+    (let* (($key (anything-css-scss-trim-whitespace (thing-at-point 'line)))
+           ($cand (assoc-default 'candidates (anything-get-current-source)))
+           ($prop (assoc-default $key $cand)))
       ;; Synchronizing selecter list to buffer
       (with-selected-window anything-css-scss-synchronizing-window
-        (goto-char (car info)))
+        (goto-char (car $prop)))
       )))
 
 ;; Store function to restore later
 (setq anything-css-scss-tmp anything-display-function)
 
+
 (defun anything-css-scss ()
   (interactive)
   (setq anything-css-scss-synchronizing-window (selected-window))
+  (setq anything-css-scss-last-point (point))
   (unwind-protect
       (let (($list
              (loop for ($sel $beg $end $dep)
                    in (anything-css-scss-selector-hash-to-list)
-                   collect
-                   (list (mapconcat 'identity $sel " ") $beg $end)
-                   into $res
+                   collect (list (mapconcat 'identity $sel " ") $beg $end $dep) into $res
                    finally return $res
                    )))
         ;; Modify window split function temporary
         (setq anything-display-function
               (lambda (buf)
-                (split-window-horizontally)
+                (if anything-css-scss-split-window-vertically
+                    (split-window-vertically)
+                  (split-window-horizontally))
                 (other-window 1)
                 (switch-to-buffer buf)))
         ;; For synchronizing position
@@ -303,6 +342,7 @@ If $noexcursion is not-nil cursor doesn't move."
         ;; Execute anything
         (anything :sources (anything-c-source-anything-css-scss $list)
               :buffer "*Anything Css SCSS*"
+              :preselect (anything-css-scss-current-selector)
               :candidate-number-limit 999)
         ;; Restore anything's hook and window function
         (progn
