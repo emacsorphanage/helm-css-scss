@@ -1,31 +1,31 @@
-;;; helm-css-scss.el --- SCSS Selector with helm interface -*- coding: utf-8; lexical-binding: t -*-
-;;
+;;; helm-css-scss.el --- CSS/SCSS selector with helm interface -*- coding: utf-8; lexical-binding: t -*-
+
 ;; Copyright (C) 2013 by Shingo Fukuyama
-;;
+
 ;; Version: 1.0
 ;; Author: Shingo Fukuyama - http://fukuyama.co
 ;; URL: https://github.com/ShingoFukuyama/helm-css-scss
 ;; Created: Oct 18 2013
 ;; Keywords: scss css mode helm
 ;; Package-Requires: ((helm "1.0") (emacs "24"))
-;;
+
 ;; This program is free software; you can redistribute it and/or
 ;; modify it under the terms of the GNU General Public License as
 ;; published by the Free Software Foundation; either version 2 of
 ;; the License, or (at your option) any later version.
-;;
+
 ;; This program is distributed in the hope that it will be
 ;; useful, but WITHOUT ANY WARRANTY; without even the implied
 ;; warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 ;; PURPOSE.  See the GNU General Public License for more details.
-;;
+
 ;;; Commentary:
-;;
+
 ;; This program has two main functions
-;;
+
 ;; (helm-css-scss)
 ;;   Easily jumping between SCSS selectors powerd by helm.el
-;;
+
 ;; (helm-css-scss-insert-close-comment &optional $depth)
 ;;   Insert inline comment like " //__ comment" at the next of
 ;;   a close brace "}". If it's aleardy there, update it.
@@ -43,6 +43,7 @@
 (require 'helm)
 
 ;;; config -----------------------------
+
 (defvar helm-css-scss-insert-close-comment-depth 3
   "Set SCSS style nest depth")
 
@@ -50,6 +51,7 @@
   "If it's nil helm window will appear horizontally")
 
 ;;; common parts -----------------------------
+
 (defun helm-css-scss-nthcar ($i $l)
   "Return n($i) of values from the head of a list($l)"
   (loop for $k from 1 to $i
@@ -77,6 +79,7 @@
       )))
 
 ;;; scan selector -----------------------------
+
 (defun* helm-css-scss-asterisk-comment-p (&optional $point)
   "Check whether $point within /* */ or not."
   (or $point (setq $point (point)))
@@ -143,6 +146,7 @@
           collect (cons $k $v))))
 
 ;;; core -----------------------------
+
 (defun helm-css-scss--extract-selector ()
   (let (($multi "") $s $po1 $po2 $str $commentp)
     ;; Collect multiple selector across previous lines
@@ -222,11 +226,12 @@ If $noexcursion is not-nil cursor doesn't move."
       $ret)
     ))
 
+;;;###autoload
 (defun* helm-css-scss-insert-close-comment ($depth)
   (interactive (list (read-number "Nest Depth: "
                              helm-css-scss-insert-close-comment-depth)))
   ;; Delete original comment for update comments
-  (helm-css-scss-delete-all-matches-in-buffer "[ \t]?\\/\\/__.*$")
+  (helm-css-scss-delete-all-matches-in-buffer "[ \t]?\\/\\*__.*\\*\\/")
   (if (<= $depth 0) (return-from helm-css-scss-insert-close-comment nil))
   (let (($list (helm-css-scss-selector-hash-to-list))
         $slist)
@@ -240,7 +245,7 @@ If $noexcursion is not-nil cursor doesn't move."
       (loop for ($end $sel) in $slist
             do (progn
                  (goto-char $end)
-                 (insert (format " //__ %s" $sel))))
+                 (insert (format " /*__ %s */" $sel))))
       )))
 
 (defun helm-css-scss-current-selector (&optional $list $point)
@@ -258,6 +263,7 @@ If $noexcursion is not-nil cursor doesn't move."
     (mapconcat 'identity (car $s) " ")
     ))
 
+;;;###autoload
 (defun helm-css-scss-move-and-echo-previous-selector ()
   (interactive)
   (let ($s)
@@ -267,13 +273,6 @@ If $noexcursion is not-nil cursor doesn't move."
              "No more exist the previous target from here"))))
 
 ;;; option -----------------------------
-(defun helm-css-scss-move-and-echo-next-selector ()
-  (interactive)
-  (let ($s)
-    (message (if (setq $s (helm-css-scss-selector-next))
-               $s
-             (goto-char (point-max))
-             "No more exist the next target from here"))))
 
 (defun helm-css-scss-move-and-echo-previous-selector ()
   (interactive)
@@ -317,7 +316,7 @@ If $noexcursion is not-nil cursor doesn't move."
 ;; Store function to restore later
 (setq helm-css-scss-tmp helm-display-function)
 
-
+;;;###autoload
 (defun helm-css-scss ()
   (interactive)
   (setq helm-css-scss-synchronizing-window (selected-window))

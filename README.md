@@ -1,10 +1,8 @@
-This program makes your CSS/SCSS coding faster and easier than ever. You can see all selectors at once powerd by `helm.el` or `anything.el`. 
+This program makes your CSS/SCSS coding faster and easier than ever. You can see all selectors at once powerd by `helm.el`. 
 
 [48 second Youtube live coding](http://www.youtube.com/watch?v=25Fqi-4WL4o&feature=player_embedded)
 
 ![helm-css-scss](https://github.com/ShingoFukuyama/helm-css-scss/raw/master/image/helm-css-scss.png)
-
-If you prefer `anything.el` just consider below `helm`s as `anything`.
 
 ### Install
 
@@ -36,15 +34,18 @@ Insert comment the next of a close brace. If each comment is already there, it w
 #### Configure variable
 
 In default, Helm popup window appears horizontally. If you'd like to split window vertically setting this as a t not nil. 
+
 `(setq helm-css-scss-split-window-vertically nil)` 
 
 In SCSS you can specify a nest depth value in advance: 
+
 `(setq helm-css-scss-insert-close-comment-depth 2)` 
 
 ### Example config
 
 ```elisp
-(require 'helm-config) ;; https://github.com/emacs-helm/helm
+(require 'helm-config)
+
 (add-to-list 'load-path
              (concat "~/.emacs.d/elisp/helm-css-scss"))
 (require 'helm-css-scss)
@@ -82,5 +83,16 @@ I've confirmed working this program under the following environment.
 * Mac OSX 10.8.5 with Cocoa Emacs version 24.3.1
 
 And each environment with following external elisp. 
-[helm.el](https://github.com/emacs-helm/helm)  version 20131016 from Melpa or Github
-[anything](http://www.emacswiki.org/emacs/download/auto-install.el) version 20130606 from Melpa or EmacsWiki
+[helm.el](https://github.com/emacs-helm/helm)  version 20131016 from Melpa or Github 
+
+### Other infomation
+
+I use default css-mode and [scss-mode](https://github.com/antonj/scss-mode). 
+
+Accoding to [Google HTML/CSS Style Guide](http://google-styleguide.googlecode.com/svn/trunk/htmlcssguide.xml#CSS_Quotation_Marks), it says Do not use quotation marks in `url()`. But url with "http://..." and Data URL scheme which including "//" break the syntax of css-mode and scss-mode so helm-css-scss also affected. 
+
+It no probrem if you wrap those with single/double quotation.
+
+### Anything.el
+
+I'm not sure but helm-css-scss would work the same way when you replace all "helm" strings in `helm-css-scss.el` to "anything".
