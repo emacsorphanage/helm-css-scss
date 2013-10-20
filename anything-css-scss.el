@@ -42,9 +42,11 @@
 (require 'anything)
 
 ;;; config -----------------------------
-(defvar anything-css-scss-insert-close-comment-depth nil)
+(defvar anything-css-scss-insert-close-comment-depth 3
+  "Set SCSS style nest depth")
 
-(defvar anything-css-scss-split-window-vertically nil)
+(defvar anything-css-scss-split-window-vertically nil
+  "If it's nil anything window will appear horizontally")
 
 ;;; common parts -----------------------------
 (defun anything-css-scss-nthcar ($i $l)
@@ -219,11 +221,9 @@ If $noexcursion is not-nil cursor doesn't move."
       $ret)
     ))
 
-(defun* anything-css-scss-insert-close-comment (&optional $depth)
-  (interactive "P")
-  (setq $depth (or $depth
-                   anything-css-scss-insert-close-comment-depth
-                   21))
+(defun* anything-css-scss-insert-close-comment ($depth)
+  (interactive (list (read-number "Nest Depth: "
+                             anything-css-scss-insert-close-comment-depth)))
   ;; Delete original comment for update comments
   (anything-css-scss-delete-all-matches-in-buffer "[ \t]?\\/\\/__.*$")
   (if (<= $depth 0) (return-from anything-css-scss-insert-close-comment nil))

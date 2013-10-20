@@ -42,9 +42,11 @@
 (require 'helm)
 
 ;;; config -----------------------------
-(defvar helm-css-scss-insert-close-comment-depth nil)
+(defvar helm-css-scss-insert-close-comment-depth 3
+  "Set SCSS style nest depth")
 
-(defvar helm-css-scss-split-window-vertically nil)
+(defvar helm-css-scss-split-window-vertically nil
+  "If it's nil helm window will appear horizontally")
 
 ;;; common parts -----------------------------
 (defun helm-css-scss-nthcar ($i $l)
@@ -219,11 +221,9 @@ If $noexcursion is not-nil cursor doesn't move."
       $ret)
     ))
 
-(defun* helm-css-scss-insert-close-comment (&optional $depth)
-  (interactive "P")
-  (setq $depth (or $depth
-                   helm-css-scss-insert-close-comment-depth
-                   21))
+(defun* helm-css-scss-insert-close-comment ($depth)
+  (interactive (list (read-number "Nest Depth: "
+                             helm-css-scss-insert-close-comment-depth)))
   ;; Delete original comment for update comments
   (helm-css-scss-delete-all-matches-in-buffer "[ \t]?\\/\\/__.*$")
   (if (<= $depth 0) (return-from helm-css-scss-insert-close-comment nil))
