@@ -29,17 +29,17 @@ Show all selectors and choose one of those and then move to where it is. This fu
 
 While you choosing any selector from selectors list up and down, synchronize your buffer's cursor position. You'll be like it.
 
-
 #### `helm-css-scss-insert-close-comment`
 
-Insert comment the next of a close brace. If each comment is already there, it will be overwritten. 
+Insert comment the next of a close brace. If each comment is already there, it will be overwritten.
+
+#### Configure variable
+
+In default, Helm popup window appears horizontally. If you'd like to split window vertically setting this as a t not nil. 
+`(setq helm-css-scss-split-window-vertically nil)` 
+
 In SCSS you can specify a nest depth value in advance: 
-
 `(setq helm-css-scss-insert-close-comment-depth 2)` 
-
-Or on the spot:
-
-`C-u 2 M-x helm-css-scss-insert-close-comment`
 
 ### Example config
 
@@ -52,6 +52,9 @@ Or on the spot:
 ;; Allow comment inserting depth at each end of a brace
 (setq helm-css-scss-insert-close-comment-depth 2)
 
+;; nil is horizontally. t is vertically
+(setq helm-css-scss-split-window-vertically nil)
+
 ;; Set local keybind map for css-mode / scss-mode
 (dolist ($hook '(css-mode-hook scss-mode-hook))
   (add-hook
@@ -59,6 +62,8 @@ Or on the spot:
    (lambda ()
      (local-set-key (kbd "s-i") ;; [command + i]
                     'helm-css-scss)
+     (local-set-key (kbd "s-b") ;; [command + b]
+                    'helm-css-scss-back-to-last-point)
      (local-set-key (kbd "s-c") ;; [command + c]
                     'helm-css-scss-insert-close-comment)
      (local-set-key (kbd "s-n") ;; [command + n]
@@ -77,5 +82,5 @@ I've confirmed working this program under the following environment.
 * Mac OSX 10.8.5 with Cocoa Emacs version 24.3.1
 
 And each environment with following external elisp. 
-`helm.el`  version 20131016.820 
-`anything` version 20130606.946
+[helm.el](https://github.com/emacs-helm/helm)  version 20131016 from Melpa or Github
+[anything](http://www.emacswiki.org/emacs/download/auto-install.el) version 20130606 from Melpa or EmacsWiki
