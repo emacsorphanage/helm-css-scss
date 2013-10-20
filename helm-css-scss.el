@@ -31,13 +31,20 @@
 ;;   Insert inline comment like " //__ comment" at the next of
 ;;   a close brace "}". If it's aleardy there, update it.
 ;;   You can also specify a nest $depth of selector.
+;;
+;; TODO:
+;;   Jump back latest position
+;;
+;;
 
-(eval-when-compile
-  (require 'cl))
+(eval-when-compile (require 'cl))
+
 (require 'helm)
 
 ;;; config -----------------------------
 (defvar helm-css-scss-insert-close-comment-depth nil)
+
+(defvar helm-css-scss-split-window-vertically nil)
 
 ;;; common parts -----------------------------
 (defun helm-css-scss-nthcar ($i $l)
@@ -66,7 +73,7 @@
       (delete-region (match-beginning 0) (match-end 0))
       )))
 
-;;; comment-p -----------------------------
+;;; scan selector -----------------------------
 (defun* helm-css-scss-asterisk-comment-p (&optional $point)
   "Check whether $point within /* */ or not."
   (or $point (setq $point (point)))
@@ -99,6 +106,38 @@
   (or $point (setq $point (point)))
   (or (helm-css-scss-slash-comment-p $point)
       (helm-css-scss-asterisk-comment-p $point)))
+
+(defun helm-css-scss-selector-to-hash ()
+  (interactive)
+  (let ($s $beg ($end nil)
+        $h $n ($max nil) ($sl nil))
+    (setq $h (make-hash-table :test 'equal))
+    (save-excursion
+      (goto-char (point-min))
+      (while (setq $s (helm-css-scss-selector-next))
+        (setq $beg (point))
+        (setq $end (scan-sexps $beg 1))
+
+        (setq $max (cons $end $max))
+        (setq $max (mapcar (lambda (x)
+                             (if (< x $beg)
+                                 nil
+                               x))
+                           $max))
+        (setq $max (delq nil $max))
+        (setq $n (length $max))
+        (if (<= $n (length $sl))
+            (loop repeat (- (1+ (length $sl)) $n) do (pop $sl)))
+        (setq $sl (cons $s $sl))
+        (puthash (reverse $sl) (list $beg $end $n) $h)
+        ))
+    $h))
+
+(defun helm-css-scss-selector-hash-to-list ()
+  (let ($hash)
+    (setq $hash (helm-css-scss-selector-to-hash))
+    (loop for $k being hash-key in $hash using (hash-values $v)
+          collect (cons $k $v))))
 
 ;;; core -----------------------------
 (defun helm-css-scss--extract-selector ()
@@ -180,38 +219,6 @@ If $noexcursion is not-nil cursor doesn't move."
       $ret)
     ))
 
-(defun helm-css-scss-selector-to-hash ()
-  (interactive)
-  (let ($s $beg ($end nil)
-        $h $n ($max nil) ($sl nil))
-    (setq $h (make-hash-table :test 'equal))
-    (save-excursion
-      (goto-char (point-min))
-      (while (setq $s (helm-css-scss-selector-next))
-        (setq $beg (point))
-        (setq $end (scan-sexps $beg 1))
-
-        (setq $max (cons $end $max))
-        (setq $max (mapcar (lambda (x)
-                             (if (< x $beg)
-                                 nil
-                               x))
-                           $max))
-        (setq $max (delq nil $max))
-        (setq $n (length $max))
-        (if (<= $n (length $sl))
-            (loop repeat (- (1+ (length $sl)) $n) do (pop $sl)))
-        (setq $sl (cons $s $sl))
-        (puthash (reverse $sl) (list $beg $end $n) $h)
-        ))
-    $h))
-
-(defun helm-css-scss-selector-hash-to-list ()
-  (let ($hash)
-    (setq $hash (helm-css-scss-selector-to-hash))
-    (loop for $k being hash-key in $hash using (hash-values $v)
-          collect (cons $k $v))))
-
 (defun* helm-css-scss-insert-close-comment (&optional $depth)
   (interactive "P")
   (setq $depth (or $depth
@@ -235,6 +242,29 @@ If $noexcursion is not-nil cursor doesn't move."
                  (insert (format " //__ %s" $sel))))
       )))
 
+(defun helm-css-scss-current-selector (&optional $list $point)
+  "Return selector that $point is in"
+  (unless $list (setq $list (helm-css-scss-selector-hash-to-list)))
+  (or $point (setq $point (point)))
+  (let ($s)
+    (setq $s (loop for ($sel $beg $end $dep) in $list
+                   if (and (< $point $end) (>= $point $beg))
+                   collect (list $dep $sel) into $res
+                   finally return $res))
+    ;; Get the deepest selector
+    (setq $s (cdr (car (sort* $s '> :key 'car))))
+    ;; (mapconcat 'identity $s " ")
+    (mapconcat 'identity (car $s) " ")
+    ))
+
+(defun helm-css-scss-move-and-echo-previous-selector ()
+  (interactive)
+  (let ($s)
+    (message (if (setq $s (helm-css-scss-selector-previous))
+               $s
+             (goto-char (point-min))
+             "No more exist the previous target from here"))))
+
 ;;; option -----------------------------
 (defun helm-css-scss-move-and-echo-next-selector ()
   (interactive)
@@ -257,44 +287,53 @@ If $noexcursion is not-nil cursor doesn't move."
 (defun helm-c-source-helm-css-scss ($list)
   `((name . "SCSS Selectors")
     (candidates . ,$list)
-    ;(candidates-in-buffer)
-    (action ("Goto open brace"  . (lambda (po) (goto-char (car po))))
-            ("Goto close brace" . (lambda (po) (goto-char (nth 1 po)))))
+    (action ("Goto open brace"  . (lambda ($po) (goto-char (car $po))))
+            ("Goto close brace" . (lambda ($po) (goto-char (nth 1 $po)))))
     ))
+
+(defvar helm-css-scss-last-point nil
+  "For jump back once")
+
+(defun helm-css-scss-back-to-last-point ()
+  (interactive)
+  (when helm-css-scss-last-point
+    (let (($po (point)))
+      (goto-char helm-css-scss-last-point)
+      (setq helm-css-scss-last-point $po))))
 
 (defvar helm-css-scss-synchronizing-window nil
   "Store window identity for synchronizing")
 (defun helm-css-scss-synchronizing-position ()
   (with-helm-window
-    (let* ((source (helm-get-current-source))
-           (select (helm-css-scss-trim-whitespace (thing-at-point 'line)))
-           (candidates (assoc-default 'candidates source))
-           (info (assoc-default select candidates))
-           )
+    (let* (($key (helm-css-scss-trim-whitespace (thing-at-point 'line)))
+           ($cand (assoc-default 'candidates (helm-get-current-source)))
+           ($prop (assoc-default $key $cand)))
       ;; Synchronizing selecter list to buffer
       (with-selected-window helm-css-scss-synchronizing-window
-        (goto-char (car info)))
+        (goto-char (car $prop)))
       )))
 
 ;; Store function to restore later
 (setq helm-css-scss-tmp helm-display-function)
 
+
 (defun helm-css-scss ()
   (interactive)
   (setq helm-css-scss-synchronizing-window (selected-window))
+  (setq helm-css-scss-last-point (point))
   (unwind-protect
       (let (($list
              (loop for ($sel $beg $end $dep)
                    in (helm-css-scss-selector-hash-to-list)
-                   collect
-                   (list (mapconcat 'identity $sel " ") $beg $end)
-                   into $res
+                   collect (list (mapconcat 'identity $sel " ") $beg $end $dep) into $res
                    finally return $res
                    )))
         ;; Modify window split function temporary
         (setq helm-display-function
               (lambda (buf)
-                (split-window-horizontally)
+                (if helm-css-scss-split-window-vertically
+                    (split-window-vertically)
+                  (split-window-horizontally))
                 (other-window 1)
                 (switch-to-buffer buf)))
         ;; For synchronizing position
@@ -303,6 +342,7 @@ If $noexcursion is not-nil cursor doesn't move."
         ;; Execute helm
         (helm :sources (helm-c-source-helm-css-scss $list)
               :buffer "*Helm Css SCSS*"
+              :preselect (helm-css-scss-current-selector)
               :candidate-number-limit 999)
         ;; Restore helm's hook and window function
         (progn
