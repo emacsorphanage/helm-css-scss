@@ -264,6 +264,15 @@ If $noexcursion is not-nil cursor doesn't move."
     ))
 
 ;;;###autoload
+(defun helm-css-scss-move-and-echo-next-selector ()
+  (interactive)
+  (let ($s)
+    (message (if (setq $s (helm-css-scss-selector-next))
+               $s
+             (goto-char (point-max))
+             "No more exist the next target from here"))))
+
+;;;###autoload
 (defun helm-css-scss-move-and-echo-previous-selector ()
   (interactive)
   (let ($s)
