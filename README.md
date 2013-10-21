@@ -51,8 +51,7 @@ If it's t not nil, include selectors within commented area.
 ```elisp
 (require 'helm-config)
 
-(add-to-list 'load-path
-             (concat "~/.emacs.d/elisp/helm-css-scss"))
+(add-to-list 'load-path "~/.emacs.d/elisp/helm-css-scss")
 (require 'helm-css-scss)
 
 ;; Allow comment inserting depth at each end of a brace

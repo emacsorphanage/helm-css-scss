@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2013 by Shingo Fukuyama
 
-;; Version: 1.0
+;; Version: 1.1
 ;; Author: Shingo Fukuyama - http://fukuyama.co
 ;; URL: https://github.com/ShingoFukuyama/helm-css-scss
 ;; Created: Oct 18 2013
@@ -24,16 +24,12 @@
 ;; This program has two main functions
 
 ;; (helm-css-scss)
-;;   Easily jumping between SCSS selectors powerd by helm.el
+;;   Easily jumping between CSS/SCSS selectors powerd by helm.el
 
 ;; (helm-css-scss-insert-close-comment &optional $depth)
 ;;   Insert inline comment like " //__ comment" at the next of
 ;;   a close brace "}". If it's aleardy there, update it.
 ;;   You can also specify a nest $depth of selector.
-;;
-;; TODO:
-;;   Jump back latest position
-;;
 ;;
 
 ;;; Code:
@@ -95,7 +91,6 @@
       $ret)))
 
 (defun* helm-css-scss-slash-comment-p (&optional $point)
-  (interactive)
   "Check whether $point is at between // and EOL"
   (or $point (setq $point (point)))
   (save-excursion
@@ -135,7 +130,7 @@
       (helm-css-scss-asterisk-comment-p $point)))
 
 (defun helm-css-scss-selector-to-hash ()
-  (interactive)
+  "Collect all selectors and make hash table"
   (let ($s $beg ($end nil) $hash $dep ($max nil) ($sl nil))
     (setq $hash (make-hash-table :test 'equal))
     (save-excursion
@@ -159,6 +154,7 @@
     $hash))
 
 (defun helm-css-scss-selector-hash-to-list ()
+  "Collected selector hash table to list"
   (let (($hash (helm-css-scss-selector-to-hash)))
     (loop for $k being hash-key in $hash using (hash-values $v)
           collect (cons $k $v))))
@@ -208,7 +204,6 @@
   (helm-css-scss--extract-selector))
 
 (defun* helm-css-scss-fetch-previous-line (&optional $prev $noexcursion)
-  (interactive)
   "Return previous nth ($prev) line strings.
 If $noexcursion is not-nil cursor doesn't move."
   ;; In compressed Css without this return, it takes long time
@@ -249,22 +244,23 @@ If $noexcursion is not-nil cursor doesn't move."
 
 ;;;###autoload
 (defun* helm-css-scss-insert-close-comment ($depth)
-  (interactive (list (read-number "Nest Depth: "
-                                  helm-css-scss-insert-close-comment-depth)))
+  (interactive (list (read-number
+                      "Nest Depth: "
+                      helm-css-scss-insert-close-comment-depth)))
   ;; Delete original comment for update comments
   (helm-css-scss-delete-all-matches-in-buffer "[ \t]?\\/\\*__.*\\*\\/")
   (if (<= $depth 0) (return-from helm-css-scss-insert-close-comment nil))
   (let (($list (helm-css-scss-selector-to-hash))
-        $slist)
+        $hash)
     (save-excursion
       ;; Extract selector and close-brace point
-      (setq $slist
+      (setq $hash
             (loop for $k being hash-key in $list using (hash-values $v)
                   if (<= (caddr $v) $depth)
                   collect (list (cadr $v) $k) into $res
                   finally return $res))
-      (setq $slist (sort* $slist '> :key 'car))
-      (loop for ($end $sel) in $slist
+      (setq $hash (sort* $hash '> :key 'car))
+      (loop for ($end $sel) in $hash
             do (progn
                  (goto-char $end)
                  (insert (format " /*__ %s */" $sel))))
@@ -281,7 +277,7 @@ If $noexcursion is not-nil cursor doesn't move."
                    collect (cons $dep $sel) into $res
                    finally return $res))
     ;; Get the deepest selector
-   (setq $s (cdar (sort* $s '> :key 'car)))))
+   (cdar (sort* $s '> :key 'car))))
 
 ;;;###autoload
 (defun helm-css-scss-move-and-echo-next-selector ()
@@ -314,7 +310,7 @@ If $noexcursion is not-nil cursor doesn't move."
 ;;; helm -----------------------------
 
 (defun helm-c-source-helm-css-scss ($list)
-  `((name . "CSS/SCSS Selectors")
+  `((name . "CSS/Scss Selectors")
     (candidates . ,$list)
     (action ("Goto open brace"  . (lambda ($po) (goto-char (car $po))))
             ("Goto close brace" . (lambda ($po) (goto-char (nth 1 $po)))))
