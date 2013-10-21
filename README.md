@@ -33,13 +33,18 @@ Insert comment the next of a close brace. If each comment is already there, it w
 
 #### Configure variable
 
-In default, Helm popup window appears horizontally. If you'd like to split window vertically setting this as a t not nil. 
+In default, Helm popup window appears horizontally. If you'd like to split window vertically set this as a t not nil. 
 
 `(setq helm-css-scss-split-window-vertically nil)` 
 
-In SCSS you can specify a nest depth value in advance: 
+In SCSS you can specify a nest depth value in advance.
 
 `(setq helm-css-scss-insert-close-comment-depth 2)` 
+
+If it's t not nil, include selectors within commented area.
+
+`(defvar helm-css-scss-include-commented-selector nil` 
+
 
 ### Example config
 
@@ -91,7 +96,7 @@ I use default css-mode and [scss-mode](https://github.com/antonj/scss-mode).
 
 According to [Google HTML/CSS Style Guide](http://google-styleguide.googlecode.com/svn/trunk/htmlcssguide.xml#CSS_Quotation_Marks), it says Do not use quotation marks in `url()`. But URLs like "http://..." and Data URL schemes which including "//" break the syntax of css-mode and scss-mode so helm-css-scss also affected. 
 
-It no problem if you wrap those with single or double quotation.
+It's no problem if you wrap those with single or double quotation.
 
 ### Anything.el
 
