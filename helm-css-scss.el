@@ -312,8 +312,12 @@ If $noexcursion is not-nil cursor doesn't move."
 (defun helm-c-source-helm-css-scss ($list)
   `((name . "CSS/Scss Selectors")
     (candidates . ,$list)
-    (action ("Goto open brace"  . (lambda ($po) (goto-char (car $po))))
-            ("Goto close brace" . (lambda ($po) (goto-char (nth 1 $po)))))
+    (action ("Goto open brace"  . (lambda ($po)
+                                    (goto-char (car $po))
+                                    (recenter)))
+            ("Goto close brace" . (lambda ($po)
+                                    (goto-char (nth 1 $po))
+                                    (recenter))))
     ))
 
 (defvar helm-css-scss-last-point nil
@@ -335,7 +339,8 @@ If $noexcursion is not-nil cursor doesn't move."
            ($prop (assoc-default $key $cand)))
       ;; Synchronizing selecter list to buffer
       (with-selected-window helm-css-scss-synchronizing-window
-        (goto-char (car $prop)))
+        (goto-char (car $prop))
+        (recenter))
       )))
 
 ;; Store function to restore later

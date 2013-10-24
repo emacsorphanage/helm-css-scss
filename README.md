@@ -93,7 +93,7 @@ And each environment with following external elisp.
 
 I use default css-mode and [scss-mode](https://github.com/antonj/scss-mode). 
 
-According to [Google HTML/CSS Style Guide](http://google-styleguide.googlecode.com/svn/trunk/htmlcssguide.xml#CSS_Quotation_Marks), it says Do not use quotation marks in `url()`. But URLs like "http://..." and Data URL schemes which including "//" break the syntax of css-mode and scss-mode so helm-css-scss also affected. 
+According to [Google HTML/CSS Style Guide](http://google-styleguide.googlecode.com/svn/trunk/htmlcssguide.xml#CSS_Quotation_Marks), it says Do not use quotation marks in `url()`. But URLs like "http://..." and Data URI schemes which including "//" break the syntax of css-mode and scss-mode so helm-css-scss also affected. 
 
 It's no problem if you wrap those with single or double quotation.
 
