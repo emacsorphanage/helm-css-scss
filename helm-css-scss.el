@@ -49,6 +49,35 @@
 (defvar helm-css-scss-include-commented-selector nil
   "Don't list selectors which is commented")
 
+(defvar helm-css-scss-target-line-face
+  '((foreground-color . "#333333")
+    (background-color . "#ffff00")))
+
+(defvar helm-css-scss-split-window-function
+  (lambda ($buf)
+    (if helm-css-scss-split-window-vertically
+        (split-window-vertically)
+      (split-window-horizontally))
+    (other-window 1)
+    (switch-to-buffer $buf))
+  "Change the way to split window only when `helm-css-scss' is calling")
+
+(defvar helm-css-scss-first-time nil
+  "For keep line position when `helm-css-scss' calls")
+
+(defvar helm-css-scss-overlay nil
+  "Store overlay object")
+
+(defvar helm-css-scss-target-buffer nil
+  "For overlay")
+
+(defun helm-css-scss-target-overlay ()
+  "Add color to target line"
+  (overlay-put (setq helm-css-scss-overlay
+                     (make-overlay (point-at-bol) (point-at-eol)))
+               'face helm-css-scss-target-line-face))
+
+
 ;;; common parts -----------------------------
 
 (defun helm-css-scss-nthcar ($i $l)
@@ -72,8 +101,7 @@
 (defun helm-css-scss-delete-all-matches-in-buffer ($regexp)
   (save-excursion
     (goto-char (point-min))
-    (while
-        (re-search-forward $regexp nil t)
+    (while (re-search-forward $regexp nil t)
       (delete-region (match-beginning 0) (match-end 0)))))
 
 ;;; scan selector -----------------------------
@@ -339,8 +367,16 @@ If $noexcursion is not-nil cursor doesn't move."
            ($prop (assoc-default $key $cand)))
       ;; Synchronizing selecter list to buffer
       (with-selected-window helm-css-scss-synchronizing-window
-        (goto-char (car $prop))
-        (recenter))
+        (if helm-css-scss-first-time
+            (progn
+              (goto-char (car $prop))
+              (with-current-buffer helm-css-scss-target-buffer
+                (delete-overlay helm-css-scss-overlay)
+                (helm-css-scss-target-overlay))
+              (recenter))
+          (helm-css-scss-target-overlay)
+          (recenter)
+          (setq helm-css-scss-first-time t)))
       )))
 
 ;; Store function to restore later
@@ -351,16 +387,12 @@ If $noexcursion is not-nil cursor doesn't move."
   (interactive)
   (setq helm-css-scss-synchronizing-window (selected-window))
   (setq helm-css-scss-last-point (point))
+  (setq helm-css-scss-target-buffer (current-buffer))
+  (setq helm-css-scss-overlay (make-overlay (point-at-bol) (point-at-eol)))
   (unwind-protect
       (let (($list (helm-css-scss-selector-hash-to-list)))
         ;; Modify window split function temporary
-        (setq helm-display-function
-              (lambda (buf)
-                (if helm-css-scss-split-window-vertically
-                    (split-window-vertically)
-                  (split-window-horizontally))
-                (other-window 1)
-                (switch-to-buffer buf)))
+        (setq helm-display-function helm-css-scss-split-window-function)
         ;; For synchronizing position
         (add-hook 'helm-move-selection-after-hook
                   'helm-css-scss-synchronizing-position)
@@ -373,7 +405,9 @@ If $noexcursion is not-nil cursor doesn't move."
         (progn
           (remove-hook 'helm-move-selection-after-hook
                        'helm-css-scss-synchronizing-position)
-          (setq helm-display-function helm-css-scss-tmp))
+          (setq helm-display-function helm-css-scss-tmp)
+          (setq helm-css-scss-first-time nil)
+          (delete-overlay helm-css-scss-overlay))
         )))
 
 (provide 'helm-css-scss)
