@@ -362,7 +362,9 @@ If $noexcursion is not-nil cursor doesn't move."
   "Store window identity for synchronizing")
 (defun helm-css-scss-synchronizing-position ()
   (with-helm-window
-    (let* (($key (helm-css-scss-trim-whitespace (thing-at-point 'line)))
+    (let* (($key (helm-css-scss-trim-whitespace
+                  (buffer-substring-no-properties
+                   (point-at-bol) (point-at-eol))))
            ($cand (assoc-default 'candidates (helm-get-current-source)))
            ($prop (assoc-default $key $cand)))
       ;; Synchronizing selecter list to buffer
@@ -382,6 +384,9 @@ If $noexcursion is not-nil cursor doesn't move."
 ;; Store function to restore later
 (setq helm-css-scss-tmp helm-display-function)
 
+(defvar-local helm-css-scss-cache nil
+  "If buffer is not modified, cache is used")
+
 ;;;###autoload
 (defun helm-css-scss ()
   (interactive)
@@ -389,8 +394,13 @@ If $noexcursion is not-nil cursor doesn't move."
   (setq helm-css-scss-last-point (point))
   (setq helm-css-scss-target-buffer (current-buffer))
   (setq helm-css-scss-overlay (make-overlay (point-at-bol) (point-at-eol)))
+  ;; Cache
+  (cond ((not helm-css-scss-cache)
+         (setq helm-css-scss-cache (helm-css-scss-selector-hash-to-list)))
+        ((buffer-modified-p)
+         (setq helm-css-scss-cache (helm-css-scss-selector-hash-to-list))))
   (unwind-protect
-      (let (($list (helm-css-scss-selector-hash-to-list)))
+      (let (($list helm-css-scss-cache))
         ;; Modify window split function temporary
         (setq helm-display-function helm-css-scss-split-window-function)
         ;; For synchronizing position
@@ -400,7 +410,7 @@ If $noexcursion is not-nil cursor doesn't move."
         (helm :sources (helm-c-source-helm-css-scss $list)
               :buffer "*Helm Css SCSS*"
               :preselect (helm-css-scss-current-selector $list)
-              :candidate-number-limit 999)
+              :candidate-number-limit 60)
         ;; Restore helm's hook and window function
         (progn
           (remove-hook 'helm-move-selection-after-hook
