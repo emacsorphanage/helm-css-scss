@@ -410,7 +410,7 @@ If $noexcursion is not-nil cursor doesn't move."
         (helm :sources (helm-c-source-helm-css-scss $list)
               :buffer "*Helm Css SCSS*"
               :preselect (helm-css-scss-current-selector $list)
-              :candidate-number-limit 60)
+              :candidate-number-limit 999)
         ;; Restore helm's hook and window function
         (progn
           (remove-hook 'helm-move-selection-after-hook
