@@ -38,6 +38,15 @@
 
 (require 'helm)
 
+(defgroup helm-css-scss nil
+  "Open helm-swoop."
+  :prefix "helm-swoop-" :group 'helm)
+
+(defface helm-css-scss-target-line-face
+  '((t (:background "#e3e300" :foreground "#333333")))
+  "Face for helm-css-scss target line"
+  :group 'helm-css-scss)
+
 ;;; config -----------------------------
 
 (defvar helm-css-scss-insert-close-comment-depth 3
@@ -49,10 +58,6 @@
 (defvar helm-css-scss-include-commented-selector nil
   "Don't list selectors which is commented")
 
-(defvar helm-css-scss-target-line-face
-  '((foreground-color . "#333333")
-    (background-color . "#ffff00")))
-
 (defvar helm-css-scss-split-window-function
   (lambda ($buf)
     (if helm-css-scss-split-window-vertically
@@ -61,6 +66,10 @@
     (other-window 1)
     (switch-to-buffer $buf))
   "Change the way to split window only when `helm-css-scss' is calling")
+
+(defvar helm-css-scss-cache)
+
+(defvar helm-css-scss-last-point)
 
 (defvar helm-css-scss-first-time nil
   "For keep line position when `helm-css-scss' calls")
@@ -75,8 +84,7 @@
   "Add color to target line"
   (overlay-put (setq helm-css-scss-overlay
                      (make-overlay (point-at-bol) (point-at-eol)))
-               'face helm-css-scss-target-line-face))
-
+               'face 'helm-css-scss-target-line-face))
 
 ;;; common parts -----------------------------
 
@@ -194,14 +202,16 @@
     ;; Collect multiple selector across previous lines
     ;; (i.e. "div, \n p, \n span {...}")
     (save-excursion
-      (while (string-match ",[ ]*$" (setq $s (helm-css-scss-fetch-previous-line)))
+      (while (string-match ",[ ]*$"
+                           (setq $s (helm-css-scss-fetch-previous-line)))
         ;; Skip commented selector (i.e. " // .blue,")
         (save-excursion
           (move-beginning-of-line 1)
           (setq $commentp (helm-css-scss-comment-p (search-forward ","))))
         (unless $commentp
-          (setq $multi (format "%s %s" (helm-css-scss-trim-whitespace $s) $multi)))
-        ))
+          (setq $multi (format "%s %s"
+                               (helm-css-scss-trim-whitespace $s)
+                               $multi)))))
     ;; Extract selector include one-line-nesting (i.e. "div { p {...} }")
     (skip-chars-backward "^{;\n")
     (setq $po1 (point))
@@ -214,8 +224,7 @@
     ;; Return selector
     (if (equal $multi "")
         (format "%s" $str)
-      (format "%s %s" (helm-css-scss-trim-whitespace $multi) $str))
-    ))
+      (format "%s %s" (helm-css-scss-trim-whitespace $multi) $str))))
 
 (defun* helm-css-scss-selector-next (&optional $bound)
   "Return and goto next selector."
@@ -255,8 +264,7 @@ If $noexcursion is not-nil cursor doesn't move."
     (backward-char)
     (if (helm-css-scss-comment-p (point))
         (helm-css-scss-open-brace-forward $bound)
-      $ret)
-    ))
+      $ret)))
 
 (defun* helm-css-scss-open-brace-backward (&optional $bound)
   (interactive)
@@ -267,8 +275,7 @@ If $noexcursion is not-nil cursor doesn't move."
     (forward-char)
     (if (helm-css-scss-comment-p (point))
         (helm-css-scss-open-brace-backward $bound)
-      $ret)
-    ))
+      $ret)))
 
 ;;;###autoload
 (defun* helm-css-scss-insert-close-comment ($depth)
@@ -279,33 +286,35 @@ If $noexcursion is not-nil cursor doesn't move."
   (helm-css-scss-delete-all-matches-in-buffer "[ \t]?\\/\\*__.*\\*\\/")
   (if (<= $depth 0) (return-from helm-css-scss-insert-close-comment nil))
   (let (($list (helm-css-scss-selector-to-hash))
-        $hash)
+        $r1 $r2 $ordered)
     (save-excursion
       ;; Extract selector and close-brace point
-      (setq $hash
-            (loop for $k being hash-key in $list using (hash-values $v)
-                  if (<= (caddr $v) $depth)
-                  collect (list (cadr $v) $k) into $res
-                  finally return $res))
-      (setq $hash (sort* $hash '> :key 'car))
-      (loop for ($end $sel) in $hash
+      (loop for $k being hash-key in $list using (hash-values $v)
+            if (<= (caddr $v) $depth)
+            do (let (($v2 (cadr $v)))
+                 (setq $r1 (cons (cons $v2 $k) $r1))
+                 (setq $r2 (cons $v2 $r2))))
+      ;;(setq $hash (sort* $hash '> :key 'car))
+      (setq $r2 (sort $r2 '<))
+      (dolist ($x $r2)
+        (setq $ordered (cons (assoc $x $r1) $ordered)))
+      (loop for ($end . $sel) in $ordered
             do (progn
                  (goto-char $end)
-                 (insert (format " /*__ %s */" $sel))))
-      )))
+                 (insert (format " /*__ %s */" $sel)))))))
 
 (defun helm-css-scss-current-selector (&optional $list $point)
   (interactive)
   "Return selector that $point is in"
   (unless $list (setq $list (helm-css-scss-selector-hash-to-list)))
   (or $point (setq $point (point)))
-  (let ($s)
-    (setq $s (loop for ($sel $beg $end $dep) in $list
-                   if (and (< $point $end) (>= $point $beg))
-                   collect (cons $dep $sel) into $res
-                   finally return $res))
+  (let ($r1 $r2)
+    (loop for ($sel $beg $end $dep) in $list
+          if (and (< $point $end) (>= $point $beg))
+          do (progn (setq $r1 (cons (cons $dep $sel) $r1))
+                    (setq $r2 (cons $dep $r2))))
     ;; Get the deepest selector
-   (cdar (sort* $s '> :key 'car))))
+    (assoc-default (car (sort $r2 '>)) $r1)))
 
 ;;;###autoload
 (defun helm-css-scss-move-and-echo-next-selector ()
@@ -325,16 +334,6 @@ If $noexcursion is not-nil cursor doesn't move."
              (goto-char (point-min))
              "No more exist the previous target from here"))))
 
-;;; option -----------------------------
-
-(defun helm-css-scss-move-and-echo-previous-selector ()
-  (interactive)
-  (let ($s)
-    (message (if (setq $s (helm-css-scss-selector-previous))
-               $s
-             (goto-char (point-min))
-             "No more exist the previous target from here"))))
-
 ;;; helm -----------------------------
 
 (defun helm-c-source-helm-css-scss ($list)
@@ -345,11 +344,7 @@ If $noexcursion is not-nil cursor doesn't move."
                                     (recenter)))
             ("Goto close brace" . (lambda ($po)
                                     (goto-char (nth 1 $po))
-                                    (recenter))))
-    ))
-
-(defvar helm-css-scss-last-point nil
-  "For jump back once")
+                                    (recenter))))))
 
 (defun helm-css-scss-back-to-last-point ()
   (interactive)
@@ -378,24 +373,32 @@ If $noexcursion is not-nil cursor doesn't move."
               (recenter))
           (helm-css-scss-target-overlay)
           (recenter)
-          (setq helm-css-scss-first-time t)))
-      )))
+          (setq helm-css-scss-first-time t))))))
 
 ;; Store function to restore later
-(setq helm-css-scss-tmp helm-display-function)
+(defvar helm-css-scss-tmp helm-display-function
+  "To restore helm window display function")
 
-(defvar-local helm-css-scss-cache nil
-  "If buffer is not modified, cache is used")
+(defun helm-css-scss-clear-cache ()
+  "Clear cache when buffer saved"
+  (if (boundp 'helm-css-scss-cache) (setq helm-css-scss-cache nil)))
+(add-hook 'after-save-hook 'helm-css-scss-clear-cache)
 
 ;;;###autoload
 (defun helm-css-scss ()
   (interactive)
   (setq helm-css-scss-synchronizing-window (selected-window))
-  (setq helm-css-scss-last-point (point))
+  (if (boundp 'helm-css-scss-last-point)
+      (setq helm-css-scss-last-point (point))
+    (set (make-local-variable 'helm-css-scss-last-point) nil)
+    (setq helm-css-scss-last-point (point)))
   (setq helm-css-scss-target-buffer (current-buffer))
   (setq helm-css-scss-overlay (make-overlay (point-at-bol) (point-at-eol)))
   ;; Cache
-  (cond ((not helm-css-scss-cache)
+  (cond ((not (boundp 'helm-css-scss-cache))
+         (set (make-local-variable 'helm-css-scss-cache)
+              (helm-css-scss-selector-hash-to-list)))
+        ((not helm-css-scss-cache)
          (setq helm-css-scss-cache (helm-css-scss-selector-hash-to-list)))
         ((buffer-modified-p)
          (setq helm-css-scss-cache (helm-css-scss-selector-hash-to-list))))
@@ -417,8 +420,7 @@ If $noexcursion is not-nil cursor doesn't move."
                        'helm-css-scss-synchronizing-position)
           (setq helm-display-function helm-css-scss-tmp)
           (setq helm-css-scss-first-time nil)
-          (delete-overlay helm-css-scss-overlay))
-        )))
+          (delete-overlay helm-css-scss-overlay)))))
 
 (provide 'helm-css-scss)
 ;;; helm-css-scss.el ends here
