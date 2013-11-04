@@ -149,62 +149,9 @@
 
 ;;; scan selector -----------------------------
 
-;; (defun* helm-css-scss-asterisk-comment-p (&optional $point)
-;;   "Check whether $point is within /* */ or not."
-;;   (or $point (setq $point (point)))
-;;   (save-excursion
-;;     (goto-char $point)
-;;     (let ($ret)
-;;       (save-excursion
-;;         (when (re-search-backward "\\*\\/\\|\\/\\*" nil t)
-;;          (if (equal (match-string 0) "/*")
-;;               (setq $ret t))))
-;;       $ret)))
-
-;; (defun* helm-css-scss-slash-comment-p (&optional $point)
-;;   "Check whether $point is at between // and EOL"
-;;   (or $point (setq $point (point)))
-;;   (save-excursion
-;;     (goto-char $point)
-;;     (let (($beg (point-at-bol))
-;;           ($end (point-at-eol))
-;;           $paren $p1)
-;;       (cond ((re-search-backward "\\/\\/" $beg t)
-;;              (setq $p1 (match-beginning 0)) ;; Beginning point of "//"
-;;              (if (helm-css-scss-inner-parentheses-p $point)
-;;                  ;; Match // plus within (...) : URL or Data URI Scheme
-;;                  (if (and (< (match-beginning 0) $p1)  ;; "("   < "//"
-;;                           (< $beg (match-beginning 0)) ;; "bol" < "("
-;;                           )
-;;                      (return-from helm-css-scss-slash-comment-p nil)
-;;                    (setq $paren (match-end 0)))
-;;                (setq $paren (match-end 0))))
-;;             (t (return-from helm-css-scss-slash-comment-p nil)))
-;;       (if (and (<= $point $end) (>= $point $paren))
-;;           t
-;;         nil))))
-
-;; (defun helm-css-scss-inner-parentheses-p (&optional $point)
-;;   "Check whether $point within (...) or not. Return beginning point or nil"
-;;   (or $point (setq $point (point)))
-;;   (save-excursion
-;;     (goto-char $point)
-;;     (let ($beg $end)
-;;       (save-excursion
-;;         (when (re-search-backward ")\\|(" nil t)
-;;          (when (equal (match-string 0) "(")
-;;            (setq $beg (match-end 0)))))
-;;       $beg)))
-
-;; (defun* helm-css-scss-comment-p (&optional $point)
-;;   (if helm-css-scss-include-commented-selector
-;;       (return-from helm-css-scss-comment-p nil))
-;;   (or $point (setq $point (point)))
-;;   (or (helm-css-scss-slash-comment-p $point)
-;;       (helm-css-scss-asterisk-comment-p $point)))
-
 (defun helm-css-scss-comment-p (&optional $point)
-  (nth 4 (parse-partial-sexp (point-min) (point))))
+  (or $point (setq $point (point)))
+  (nth 4 (parse-partial-sexp (point-min) $point)))
 
 (defun helm-css-scss-selector-to-hash ()
   "Collect all selectors and make hash table"
