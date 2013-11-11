@@ -56,7 +56,7 @@
 ;; This program has two main functions
 
 ;; (helm-css-scss)
-;;   Easily jumping between CSS/SCSS selectors powerd by helm.el
+;;   Easily jumping between CSS/SCSS selectors powered by helm.el
 
 ;; (helm-css-scss-insert-close-comment &optional $depth)
 ;;   Insert inline comment like " //__ comment" at the next of
@@ -99,7 +99,7 @@
     (switch-to-buffer $buf))
   "Change the way to split window only when `helm-css-scss' is calling")
 
-;; Avoide compile error for apply buffer local variable
+;; Avoid compile error to apply buffer local variable
 (defvar helm-css-scss-cache)
 (defvar helm-css-scss-last-point)
 
@@ -173,7 +173,7 @@
         (if (<= $dep (length $sl))
             (loop repeat (- (1+ (length $sl)) $dep) do (pop $sl)))
         (setq $sl (cons $s $sl))
-        (puthash (mapconcat 'identity (reverse $sl) " ") (list $beg $end $dep) $hash)
+        (puthash (mapconcat 'identity (nreverse $sl) " ") (list $beg $end $dep) $hash)
         ))
     $hash))
 
@@ -200,7 +200,7 @@
           (setq $multi (format "%s %s"
                                (helm-css-scss-trim-whitespace $s)
                                $multi)))))
-    ;; Extract selector include one-line-nesting (i.e. "div { p {...} }")
+    ;; Extract selector includes one-line-nesting (i.e. "div { p {...} }")
     (skip-chars-backward "^{;\n")
     (setq $po1 (point))
     (skip-chars-forward "^{")
@@ -348,7 +348,7 @@ If $noexcursion is not-nil cursor doesn't move."
                    (point-at-bol) (point-at-eol))))
            ($cand (assoc-default 'candidates (helm-get-current-source)))
            ($prop (assoc-default $key $cand)))
-      ;; Synchronizing selecter list to buffer
+      ;; Synchronizing selector list to buffer
       (with-selected-window helm-css-scss-synchronizing-window
         (if helm-css-scss-first-time
             (progn
@@ -393,7 +393,7 @@ If $noexcursion is not-nil cursor doesn't move."
          (setq helm-css-scss-cache (helm-css-scss-selector-hash-to-list))))
   (unwind-protect
       (let (($list helm-css-scss-cache))
-        ;; Modify window split function temporary
+        ;; Modify window split function temporarily
         (setq helm-display-function helm-css-scss-split-window-function)
         ;; For synchronizing position
         (add-hook 'helm-move-selection-after-hook

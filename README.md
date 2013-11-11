@@ -1,8 +1,8 @@
-This program makes your CSS/SCSS coding faster and easier than ever. You can see all selectors at once powerd by `helm.el`. 
+This program makes your CSS/SCSS coding faster and easier than ever. You can see all selectors at once powered by `helm.el`. 
 
 [48 seconds Youtube live coding](http://www.youtube.com/embed/25Fqi-4WL4o?rel=0)
 
-![helm-css-scss](https://github.com/ShingoFukuyama/helm-css-scss/raw/master/image/helm-css-scss.png)
+![helm-css-scss](https://github.com/ShingoFukuyama/helm-css-scss/raw/master/image/helm-css-scss.gif)
 
 ### Install
 
@@ -23,9 +23,9 @@ This program makes your CSS/SCSS coding faster and easier than ever. You can see
 
 #### `helm-css-scss`
 
-Show all selectors and choose one of those and then move to where it is. This function show a few more options pressing `TAB` key when you choose a selector. 
+Show all selectors and choose one of those and then move to where it is. This function shows a few more options pressing `TAB` key when you choose a selector. 
 
-While you choosing any selector from selectors list up and down, synchronize your buffer's cursor position. You'll be like it.
+While you are choosing any selector from selectors list up and down, synchronize your buffer's cursor position. You'll be like it.
 
 #### `helm-css-scss-insert-close-comment`
 
@@ -33,7 +33,7 @@ Insert comment the next of a close brace. If each comment is already there, it w
 
 #### Configure variable
 
-In default, Helm popup window appears horizontally. If you'd like to split window vertically set this as a t not nil. 
+By default, Helm popup window appears horizontally. If you'd like to split window vertically set this as a t not nil. 
 
 `(setq helm-css-scss-split-window-vertically nil)` 
 
