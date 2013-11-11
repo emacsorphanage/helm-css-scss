@@ -1,7 +1,5 @@
 This program makes your CSS/SCSS coding faster and easier than ever. You can see all selectors at once powered by `helm.el`. 
 
-[48 seconds Youtube live coding](http://www.youtube.com/embed/25Fqi-4WL4o?rel=0)
-
 ![helm-css-scss](https://github.com/ShingoFukuyama/helm-css-scss/raw/master/image/helm-css-scss.gif)
 
 ### Install
