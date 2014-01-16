@@ -81,14 +81,20 @@
 
 ;;; config -----------------------------
 
-(defvar helm-css-scss-insert-close-comment-depth 3
-  "Set SCSS style nest depth")
+(defcustom helm-css-scss-insert-close-comment-depth 3
+  "Set SCSS style nest depth"
+  :group 'helm-css-scss
+  :type 'number)
 
-(defvar helm-css-scss-split-window-vertically nil
-  "If it's nil helm window will appear horizontally")
+(defcustom helm-css-scss-split-window-vertically nil
+  "If it's nil helm window will appear horizontally"
+  :group 'helm-css-scss
+  :type 'boolean)
 
-(defvar helm-css-scss-include-commented-selector nil
-  "Don't list selectors which is commented")
+(defcustom helm-css-scss-include-commented-selector nil
+  "Don't list selectors which is commented"
+  :group 'helm-css-scss
+  :type 'boolean)
 
 (defvar helm-css-scss-split-window-function
   (lambda ($buf)
@@ -279,8 +285,7 @@ If $noexcursion is not-nil cursor doesn't move."
                  (setq $r2 (cons $v2 $r2))))
       ;;(setq $hash (sort* $hash '> :key 'car))
       (setq $r2 (sort $r2 '<))
-      (dolist ($x $r2)
-        (setq $ordered (cons (assoc $x $r1) $ordered)))
+      (mapc (lambda ($x) (setq $ordered (cons (assoc $x $r1) $ordered))) $r2)
       (loop for ($end . $sel) in $ordered
             do (progn
                  (goto-char $end)
