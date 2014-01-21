@@ -168,16 +168,16 @@
 (defvar helm-css-scss-multi-buffer "*Helm Css SCSS multi buffers*")
 (defvar helm-css-scss-candidate-number-limit 999)
 
-(defvar helm-css-scss-target-buffer nil
-  "For overlay")
-
+(defvar helm-css-scss-target-buffer nil)
+(defvar helm-css-scss-invisible-targets nil)
 (defvar helm-css-scss-move-line-action-last-buffer nil)
 
 ;;; common parts -----------------------------
 
 (defun helm-css-scss--target-overlay-move (&optional $beg $end $buf)
   "Move target overlay"
-  (move-overlay helm-css-scss-overlay (or $beg (point-at-bol)) (or $end (point)) $buf))
+  (move-overlay helm-css-scss-overlay (or $beg (point-at-bol)) (or $end (point)) $buf)
+  (helm-css-scss--unveil-invisible-overlay))
 
 (defun helm-css-scss-nthcar ($i $l)
   "Return n($i) of values from the head of a list($l)"
@@ -207,6 +207,25 @@
     (goto-char (point-min))
     (while (re-search-forward $regexp nil t)
       (delete-region (match-beginning 0) (match-end 0)))))
+
+(defun helm-css-scss--restore-unveiled-overlay ()
+  (when helm-css-scss-invisible-targets
+    (mapc (lambda ($ov) (overlay-put (car $ov) 'invisible (cdr $ov)))
+          helm-css-scss-invisible-targets)
+    (setq helm-css-scss-invisible-targets nil)))
+
+(defun helm-css-scss--unveil-invisible-overlay ()
+  "Show hidden text temporarily to view it during helm-css-scss.
+This function needs to call after latest helm-css-scss-overlay set."
+  (helm-css-scss--restore-unveiled-overlay)
+  (mapc (lambda ($ov)
+          (let (($type (overlay-get $ov 'invisible)))
+            (when $type
+              (overlay-put $ov 'invisible nil)
+              (setq helm-css-scss-invisible-targets
+                    (cons (cons $ov $type) helm-css-scss-invisible-targets)))))
+        (overlays-in (overlay-start helm-css-scss-overlay)
+                     (overlay-end helm-css-scss-overlay))))
 
 ;;; scan selector -----------------------------
 
@@ -478,6 +497,9 @@ If $noexcursion is not-nil cursor doesn't move."
 
 (defun helm-css-scss--restore ()
   "Restore helm's hook and window function"
+  (when (= 1 helm-exit-status)
+    (helm-css-scss-back-to-last-point t)
+    (helm-css-scss--restore-unveiled-overlay))
   (setq helm-css-scss-last-query helm-pattern)
   (delete-overlay helm-css-scss-overlay))
 
