@@ -1,12 +1,12 @@
-;;; helm-css-scss.el --- CSS/SCSS selector with helm interface -*- coding: utf-8; lexical-binding: t -*-
+;;; helm-css-scss.el --- CSS/SCSS/LESS Selectors with helm interface -*- coding: utf-8; lexical-binding: t -*-
 
 ;; Copyright (C) 2013 by Shingo Fukuyama
 
-;; Version: 1.1
+;; Version: 1.2
 ;; Author: Shingo Fukuyama - http://fukuyama.co
 ;; URL: https://github.com/ShingoFukuyama/helm-css-scss
 ;; Created: Oct 18 2013
-;; Keywords: scss css mode helm
+;; Keywords: scss css less selector helm
 ;; Package-Requires: ((helm "1.0") (emacs "24"))
 
 ;; This program is free software; you can redistribute it and/or
@@ -32,11 +32,14 @@
 ;; ;; Allow comment inserting depth at each end of a brace
 ;; (setq helm-css-scss-insert-close-comment-depth 2)
 
-;; ;; nil is horizontally. t is vertically
-;; (setq helm-css-scss-split-window-vertically nil)
+;; ;; If this value is t, split window inside the current window
+;; (setq helm-css-scss-split-with-multiple-windows nil)
+
+;; ;; Split direction. 'split-window-vertically or 'split-window-horizontally
+;; (setq helm-css-scss-split-direction 'split-window-vertically)
 
 ;; ;; Set local keybind map for css-mode / scss-mode
-;; (dolist ($hook '(css-mode-hook scss-mode-hook))
+;; (dolist ($hook '(css-mode-hook scss-mode-hook less-mode-hook))
 ;;   (add-hook
 ;;    $hook
 ;;    (lambda ()
@@ -74,11 +77,6 @@
   "Open helm-css-scss."
   :prefix "helm-css-scss-" :group 'helm)
 
-(defface helm-css-scss-target-line-face
-  '((t (:background "#e3e300" :foreground "#333333")))
-  "Face for helm-css-scss target line"
-  :group 'helm-css-scss)
-
 ;;; config -----------------------------
 
 (defcustom helm-css-scss-insert-close-comment-depth 3
@@ -86,45 +84,100 @@
   :group 'helm-css-scss
   :type 'number)
 
-(defcustom helm-css-scss-split-window-vertically nil
-  "If it's nil helm window will appear horizontally"
+(defcustom helm-css-scss-split-with-multiple-windows nil
+ "Split window when having multiple windows open"
+ :group 'helm-css-scss
+ :type 'boolean)
+
+(defcustom helm-css-scss-split-direction 'split-window-vertically
+ "Split direction"
+ :type '(choice (const :tag "vertically"   split-window-vertically)
+                (const :tag "horizontally" split-window-horizontally))
+ :group 'helm-css-scss)
+
+(defcustom helm-css-scss-include-commented-selector t
+  "Don't list selectors which is commented, if this value is nil"
   :group 'helm-css-scss
   :type 'boolean)
 
-(defcustom helm-css-scss-include-commented-selector nil
-  "Don't list selectors which is commented"
-  :group 'helm-css-scss
-  :type 'boolean)
+(defface helm-css-scss-target-line-face
+  '((((class color) (background dark))
+     (:background "#e3e300" :foreground "#333333"))
+    (((class color) (background light))
+     (:background "#0033ff" :foreground "#ffffff"))
+    (t (:background "#0033ff" :foreground "#ffffff")))
+  "Face for helm-css-scss target line"
+  :group 'helm-css-scss)
+
+(defface helm-css-scss-selector-depth-face-1
+  '((((class color) (background dark)) (:foreground "#ffff00"))
+    (((class color) (background light)) (:foreground "#0000ff"))
+    (t (:foreground "#ffff00")))
+  "Selector depth 1"
+  :group 'helm-css-scss)
+(defface helm-css-scss-selector-depth-face-2
+  '((((class color) (background dark)) (:foreground "#ffdd00"))
+    (((class color) (background light)) (:foreground "#3300ff"))
+    (t (:foreground "#ffdd00")))
+  "Selector depth 2"
+  :group 'helm-css-scss)
+(defface helm-css-scss-selector-depth-face-3
+  '((((class color) (background dark)) (:foreground "#ffbb00"))
+    (((class color) (background light)) (:foreground "#6600ff"))
+    (t (:foreground "#ffbb00")))
+  "Selector depth 3"
+  :group 'helm-css-scss)
+(defface helm-css-scss-selector-depth-face-4
+  '((((class color) (background dark)) (:foreground "#ff9900"))
+    (((class color) (background light)) (:foreground "#9900ff"))
+    (t (:foreground "#ff9900")))
+  "Selector depth 4"
+  :group 'helm-css-scss)
+(defface helm-css-scss-selector-depth-face-5
+  '((((class color) (background dark)) (:foreground "#ff7700"))
+    (((class color) (background light)) (:foreground "#cc00ff"))
+    (t (:foreground "#ff7700")))
+  "Selector depth 5"
+  :group 'helm-css-scss)
+(defface helm-css-scss-selector-depth-face-6
+  '((((class color) (background dark)) (:foreground "#ff5500"))
+    (((class color) (background light)) (:foreground "#ff00ff"))
+    (t (:foreground "#ff5500")))
+  "Selector depth 6"
+  :group 'helm-css-scss)
 
 (defvar helm-css-scss-split-window-function
   (lambda ($buf)
-    (if helm-css-scss-split-window-vertically
-        (split-window-vertically)
-      (split-window-horizontally))
+    (if helm-css-scss-split-with-multiple-windows
+        (funcall helm-css-scss-split-direction)
+      (when (one-window-p)
+        (funcall helm-css-scss-split-direction)))
     (other-window 1)
     (switch-to-buffer $buf))
   "Change the way to split window only when `helm-css-scss' is calling")
 
 ;; Avoide compile error for apply buffer local variable
 (defvar helm-css-scss-cache)
-(defvar helm-css-scss-last-point)
+(defvar helm-css-scss-last-point nil)
+(defvar helm-css-scss-last-query)
 
 (defvar helm-css-scss-overlay nil
   "Store overlay object")
 
+(defvar helm-css-scss-buffer "*Helm Css SCSS*")
+(defvar helm-css-scss-multi-buffer "*Helm Css SCSS multi buffers*")
+(defvar helm-css-scss-candidate-number-limit 999)
+
 (defvar helm-css-scss-target-buffer nil
   "For overlay")
 
-(defvar helm-css-scss-at-screen-top helm-display-source-at-screen-top
-  "For enable scrolling margin")
-
-(defun helm-css-scss-target-overlay ()
-  "Add color to target line"
-  (overlay-put (setq helm-css-scss-overlay
-                     (make-overlay (point-at-bol) (point)))
-               'face 'helm-css-scss-target-line-face))
+(defvar helm-css-scss-move-line-action-last-buffer nil)
 
 ;;; common parts -----------------------------
+
+(defun helm-css-scss--target-overlay-move (&optional $beg $end $buf)
+  "Move target overlay"
+  (move-overlay helm-css-scss-overlay (or $beg (point-at-bol)) (or $end (point)) $buf))
 
 (defun helm-css-scss-nthcar ($i $l)
   "Return n($i) of values from the head of a list($l)"
@@ -138,11 +191,16 @@
       (setq $text (substring $text (1+ (string-match $key $text)))))
   $text)
 
-(defun helm-css-scss-trim-whitespace ($s)
+(defsubst helm-css-scss--trim-whitespace ($s)
   "Return string without whitespace at the both beginning and end"
   (if (string-match "\\`\\(?:\\s-+\\)?\\(.+?\\)\\(?:\\s-+\\)?\\'" $s)
       (match-string 1 $s)
     $s))
+
+(defsubst helm-css-scss--goto-line ($line)
+  (goto-char (point-min))
+  (unless (search-forward "\n" nil t (1- $line))
+    (goto-char (point-max))))
 
 (defun helm-css-scss-delete-all-matches-in-buffer ($regexp)
   (save-excursion
@@ -158,26 +216,44 @@
 
 (defun helm-css-scss-selector-to-hash ()
   "Collect all selectors and make hash table"
-  (let ($s $beg ($end nil) $hash $dep ($max nil) ($sl nil))
+  (let ($selector $paren-beg $paren-end $hash $dep $max $sl
+                  $selector-name $selector-beg $selector-end)
     (setq $hash (make-hash-table :test 'equal))
     (save-excursion
       (goto-char (point-min))
-      (while (setq $s (helm-css-scss-selector-next))
-        (setq $beg (point))
-        (setq $end (scan-sexps $beg 1))
-        (setq $max (cons $end $max))
+      (while (setq $selector (helm-css-scss-selector-next))
+        (setq $paren-beg (point))
+        (setq $paren-end (scan-sexps $paren-beg 1))
+        (setq $max (cons $paren-end $max))
         (setq $max (mapcar (lambda (x)
-                             (if (< x $beg)
+                             (if (< x $paren-beg)
                                  nil
                                x))
                            $max))
         (setq $max (delq nil $max))
         (setq $dep (length $max))
+        (setq $selector-name (car $selector))
+        (setq
+         $selector-name
+         (case $dep
+           (1 (propertize $selector-name 'face 'helm-css-scss-selector-depth-face-1))
+           (2 (propertize $selector-name 'face 'helm-css-scss-selector-depth-face-2))
+           (3 (propertize $selector-name 'face 'helm-css-scss-selector-depth-face-3))
+           (4 (propertize $selector-name 'face 'helm-css-scss-selector-depth-face-4))
+           (5 (propertize $selector-name 'face 'helm-css-scss-selector-depth-face-5))
+           (6 (propertize $selector-name 'face 'helm-css-scss-selector-depth-face-6))))
+        (setq $selector-beg (cadr $selector))
+        (setq $selector-end (cddr $selector))
         (if (<= $dep (length $sl))
             (loop repeat (- (1+ (length $sl)) $dep) do (pop $sl)))
-        (setq $sl (cons $s $sl))
-        (puthash (mapconcat 'identity (reverse $sl) " ") (list $beg $end $dep) $hash)
-        ))
+        (setq $sl (cons $selector-name $sl))
+        (puthash (format "%s: %s"
+                         (propertize (number-to-string
+                                      (line-number-at-pos $selector-beg))
+                                     'face 'font-lock-function-name-face)
+                         (mapconcat 'identity (reverse $sl) " "))
+                 (list $paren-beg $paren-end $dep $selector-beg $selector-end)
+                 $hash)))
     $hash))
 
 (defun helm-css-scss-selector-hash-to-list ()
@@ -188,8 +264,15 @@
 
 ;;; core -----------------------------
 
-(defun helm-css-scss--extract-selector ()
-  (let (($multi "") $s $po1 $po2 $str $commentp)
+(defvar helm-css-scss-map
+  (let (($map (make-sparse-keymap)))
+    (set-keymap-parent $map helm-map)
+    (define-key $map (kbd "s-i") 'helm-css-scss-multi-from-helm-css-scss)
+    (delq nil $map)))
+
+(defun* helm-css-scss--extract-selector ()
+  "Return selector infomation at the point"
+  (let (($multi "") $s $po1 $po2 $po3 $str $commentp)
     ;; Collect multiple selector across previous lines
     ;; (i.e. "div, \n p, \n span {...}")
     (save-excursion
@@ -198,24 +281,29 @@
         ;; Skip commented selector (i.e. " // .blue,")
         (save-excursion
           (move-beginning-of-line 1)
+          (setq $po3 (point))
           (setq $commentp (helm-css-scss-comment-p (search-forward ","))))
         (unless $commentp
           (setq $multi (format "%s %s"
-                               (helm-css-scss-trim-whitespace $s)
+                               (helm-css-scss--trim-whitespace $s)
                                $multi)))))
     ;; Extract selector include one-line-nesting (i.e. "div { p {...} }")
-    (skip-chars-backward "^{;\n")
-    (setq $po1 (point))
-    (skip-chars-forward "^{")
-    (setq $po2 (point))
-    (setq $str (buffer-substring-no-properties $po1 $po2))
-    ;; i.e. "div { .box { p"  ->  " p"
-    (setq $str (helm-css-scss-substruct-last-string $str "{\\|}"))
-    (setq $str (helm-css-scss-trim-whitespace $str))
-    ;; Return selector
-    (if (equal $multi "")
-        (format "%s" $str)
-      (format "%s %s" (helm-css-scss-trim-whitespace $multi) $str))))
+    (save-excursion
+      (skip-chars-backward "^{;\n")
+      (setq $po1 (point))
+      ;; (setq $beg2 $po1)
+      (skip-chars-forward "^{")
+      (setq $po2 (point))
+      (setq helm-css-scss-overlay-end $po2)
+      (setq $str (buffer-substring-no-properties $po1 $po2))
+      ;; i.e. "div { .box { p"  ->  " p"
+      (setq $str (helm-css-scss-substruct-last-string $str "{\\|}"))
+      (setq $str (helm-css-scss--trim-whitespace $str))
+      ;; Return (selector-name . (selector-beginning-point . selector-end-point))
+      (if (equal $multi "")
+          (cons (format "%s" $str) (cons $po1 $po2))
+        (cons (format "%s %s" (helm-css-scss--trim-whitespace $multi) $str)
+              (cons $po3 $po2))))))
 
 (defun* helm-css-scss-selector-next (&optional $bound)
   "Return and goto next selector."
@@ -226,7 +314,7 @@
 (defun* helm-css-scss-selector-previous (&optional $bound)
   "Return and goto previous selector."
   (unless (helm-css-scss-open-brace-backward $bound)
-    (return-from helm-css-scss-selector-next nil))
+    (return-from helm-css-scss-selector-previous nil))
   (helm-css-scss--extract-selector))
 
 (defun* helm-css-scss-fetch-previous-line (&optional $prev $noexcursion)
@@ -251,7 +339,8 @@ If $noexcursion is not-nil cursor doesn't move."
     (setq $ret (re-search-forward "[^#]{" $bound t))
     (unless $ret (return-from helm-css-scss-open-brace-forward nil))
     (backward-char)
-    (if (helm-css-scss-comment-p (point))
+    (if (and (helm-css-scss-comment-p (point))
+             (not helm-css-scss-include-commented-selector))
         (helm-css-scss-open-brace-forward $bound)
       $ret)))
 
@@ -262,7 +351,8 @@ If $noexcursion is not-nil cursor doesn't move."
     (setq $ret (re-search-backward "[^#]{" $bound t))
     (unless $ret (return-from helm-css-scss-open-brace-backward nil))
     (forward-char)
-    (if (helm-css-scss-comment-p (point))
+    (if (and (helm-css-scss-comment-p (point))
+             (not helm-css-scss-include-commented-selector))
         (helm-css-scss-open-brace-backward $bound)
       $ret)))
 
@@ -272,7 +362,7 @@ If $noexcursion is not-nil cursor doesn't move."
                       "Nest Depth: "
                       helm-css-scss-insert-close-comment-depth)))
   ;; Delete original comment for update comments
-  (helm-css-scss-delete-all-matches-in-buffer "[ \t]?\\/\\*__.*\\*\\/")
+  (helm-css-scss-delete-all-matches-in-buffer "[ \t]?\\/\\*__.*?\\*\\/")
   (if (<= $depth 0) (return-from helm-css-scss-insert-close-comment nil))
   (let (($list (helm-css-scss-selector-to-hash))
         $r1 $r2 $ordered)
@@ -287,9 +377,8 @@ If $noexcursion is not-nil cursor doesn't move."
       (setq $r2 (sort $r2 '<))
       (mapc (lambda ($x) (setq $ordered (cons (assoc $x $r1) $ordered))) $r2)
       (loop for ($end . $sel) in $ordered
-            do (progn
-                 (goto-char $end)
-                 (insert (format " /*__ %s */" $sel)))))))
+            do (progn (goto-char $end)
+                      (insert (format " /*__ %s */" $sel)))))))
 
 (defun helm-css-scss-current-selector (&optional $list $point)
   (interactive)
@@ -301,7 +390,7 @@ If $noexcursion is not-nil cursor doesn't move."
           if (and (< $point $end) (>= $point $beg))
           do (progn (setq $r1 (cons (cons $dep $sel) $r1))
                     (setq $r2 (cons $dep $r2))))
-    (helm-css-scss-target-overlay)
+    (helm-css-scss--target-overlay-move)
     (recenter)
     ;; Get the deepest selector
     (assoc-default (car (sort $r2 '>)) $r1)))
@@ -310,7 +399,7 @@ If $noexcursion is not-nil cursor doesn't move."
 (defun helm-css-scss-move-and-echo-next-selector ()
   (interactive)
   (let ($s)
-    (message (if (setq $s (helm-css-scss-selector-next))
+    (message (if (setq $s (car (helm-css-scss-selector-next)))
                $s
              (goto-char (point-max))
              "No more exist the next target from here"))))
@@ -319,7 +408,7 @@ If $noexcursion is not-nil cursor doesn't move."
 (defun helm-css-scss-move-and-echo-previous-selector ()
   (interactive)
   (let ($s)
-    (message (if (setq $s (helm-css-scss-selector-previous))
+    (message (if (setq $s (car (helm-css-scss-selector-previous)))
                $s
              (goto-char (point-min))
              "No more exist the previous target from here"))))
@@ -327,70 +416,75 @@ If $noexcursion is not-nil cursor doesn't move."
 ;;; helm -----------------------------
 
 (defadvice helm-next-line (around helm-css-scss--next-line disable)
-  ad-do-it
-  (when (called-interactively-p 'any)
-    (helm-css-scss--synchronizing-position)))
+  (let ((helm-move-to-line-cycle-in-source t))
+    ad-do-it
+    (when (called-interactively-p 'any)
+      (helm-css-scss--synchronizing-position))))
 (defadvice helm-previous-line (around helm-css-scss--previous-line disable)
-  ad-do-it
-  (when (called-interactively-p 'any)
-    (helm-css-scss--synchronizing-position)))
-
-(defun helm-c-source-helm-css-scss ($list)
-  `((name . "CSS/Scss Selectors")
-    (candidates . ,$list)
-    (action ("Goto open brace"  . (lambda ($po)
-                                    (goto-char (car $po))
-                                    (recenter)))
-            ("Goto close brace" . (lambda ($po)
-                                    (goto-char (nth 1 $po))
-                                    (recenter))))))
-
-(defun helm-css-scss-back-to-last-point ()
-  (interactive)
-  (when helm-css-scss-last-point
-    (let (($po (point)))
-      (goto-char helm-css-scss-last-point)
-      (setq helm-css-scss-last-point $po))))
+  (let ((helm-move-to-line-cycle-in-source t))
+    ad-do-it
+    (when (called-interactively-p 'any)
+      (helm-css-scss--synchronizing-position))))
 
 (defvar helm-css-scss-synchronizing-window nil
   "Store window identity for synchronizing")
 (defun helm-css-scss--synchronizing-position ()
   (with-helm-window
-    (let* (($key (helm-css-scss-trim-whitespace
-                  (buffer-substring-no-properties
-                   (point-at-bol) (point-at-eol))))
+    (let* (($key (helm-css-scss--trim-whitespace
+                  (buffer-substring-no-properties (point-at-bol) (point-at-eol))))
            ($cand (assoc-default 'candidates (helm-get-current-source)))
            ($prop (assoc-default $key $cand)))
       ;; Synchronizing selecter list to buffer
       (with-selected-window helm-css-scss-synchronizing-window
+        ;;(helm-css-scss--goto-line (line-number-at-pos (nth 3 $prop)))
         (goto-char (car $prop))
         (with-current-buffer helm-css-scss-target-buffer
-          (delete-overlay helm-css-scss-overlay)
-          (helm-css-scss-target-overlay))
+          (helm-css-scss--target-overlay-move (nth 3 $prop) (nth 4 $prop)))
         (recenter)))))
 
-;; Store function to restore later
-(defvar helm-css-scss-tmp helm-display-function
-  "To restore helm window display function")
+(defun helm-c-source-helm-css-scss ($list)
+  `((name . "CSS/Scss Selectors")
+    (candidates . ,$list)
+    (action ("Goto open brace"  . (lambda ($po) (goto-char (car $po)) (recenter)))
+            ("Goto close brace" . (lambda ($po) (goto-char (nth 1 $po)) (recenter))))
+    (header-line . "helm-css-scss")
+    (keymap . ,helm-css-scss-map)))
 
-(defun helm-css-scss-clear-cache ()
+(defun helm-css-scss-back-to-last-point (&optional $cancel)
+  (interactive)
+  "Go back to last position where `helm-css-scss' was called"
+  (if helm-css-scss-last-point
+      (let (($po (point)))
+        (switch-to-buffer (cdr helm-css-scss-last-point))
+        (goto-char (car helm-css-scss-last-point))
+        (unless $cancel
+          (setq helm-css-scss-last-point
+                (cons $po (buffer-name (current-buffer))))))))
+
+(defun helm-css-scss--clear-cache ()
   "Clear cache when buffer saved"
   (if (boundp 'helm-css-scss-cache) (setq helm-css-scss-cache nil)))
-(add-hook 'after-save-hook 'helm-css-scss-clear-cache)
+(add-hook 'around-save-hook 'helm-css-scss--clear-cache)
 
-;;;###autoload
-(defun helm-css-scss ()
-  (interactive)
+(defun helm-css-scss--set ()
+  "Override helm's default behavior for helm-css-scss"
   (setq helm-css-scss-synchronizing-window (selected-window))
-  (if (boundp 'helm-css-scss-last-point)
-      (setq helm-css-scss-last-point (point))
-    (set (make-local-variable 'helm-css-scss-last-point) nil)
-    (setq helm-css-scss-last-point (point)))
+  (setq helm-css-scss-last-point (cons (point) (buffer-name (current-buffer))))
   (setq helm-css-scss-target-buffer (current-buffer))
   (setq helm-css-scss-overlay (make-overlay (point-at-bol) (point-at-eol)))
-  ;; Enable scrolling margin
-  (when helm-display-source-at-screen-top
-    (setq helm-display-source-at-screen-top nil))
+  (overlay-put helm-css-scss-overlay 'face 'helm-css-scss-target-line-face)
+  (unless (boundp 'helm-css-scss-last-query)
+    (set (make-local-variable 'helm-css-scss-last-query) "")))
+
+(defun helm-css-scss--restore ()
+  "Restore helm's hook and window function"
+  (setq helm-css-scss-last-query helm-pattern)
+  (delete-overlay helm-css-scss-overlay))
+
+;;;###autoload
+(defun helm-css-scss (&optional $query)
+  (interactive)
+  (or $query (setq $query ""))
   ;; Cache
   (cond ((not (boundp 'helm-css-scss-cache))
          (set (make-local-variable 'helm-css-scss-cache)
@@ -401,30 +495,210 @@ If $noexcursion is not-nil cursor doesn't move."
          (setq helm-css-scss-cache (helm-css-scss-selector-hash-to-list))))
   (unwind-protect
       (let (($list helm-css-scss-cache))
-        ;; Modify window split function temporary
-        (setq helm-display-function helm-css-scss-split-window-function)
-        ;; For synchronizing position
+        (helm-css-scss--set)
         (ad-enable-advice 'helm-next-line 'around 'helm-css-scss--next-line)
         (ad-activate 'helm-next-line)
         (ad-enable-advice 'helm-previous-line
                           'around 'helm-css-scss--previous-line)
         (ad-activate 'helm-previous-line)
         ;; Execute helm
-        (helm :sources (helm-c-source-helm-css-scss $list)
-              :buffer "*Helm Css SCSS*"
-              :preselect (helm-css-scss-current-selector $list)
-              :candidate-number-limit 999)
-        ;; Restore helm's hook and window function
+        (let ((helm-display-source-at-screen-top nil)
+              (helm-display-function helm-css-scss-split-window-function))
+          (helm :sources (helm-c-source-helm-css-scss $list)
+                :buffer helm-css-scss-buffer
+                :input $query
+                :prompt "Selector: "
+                :preselect (helm-css-scss-current-selector $list)
+                :candidate-number-limit helm-css-scss-candidate-number-limit)))
+    (progn
+      (helm-css-scss--restore)
+      (ad-disable-advice 'helm-next-line 'around 'helm-css-scss--next-line)
+      (ad-activate 'helm-next-line)
+      (ad-disable-advice 'helm-previous-line 'around 'helm-css-scss--previous-line)
+      (ad-activate 'helm-previous-line))))
+
+;; multi buffers -----------------------------------------
+
+(defadvice helm-move--next-line-fn (around helm-css-scss--next-line-cycle disable)
+  (if (not (helm-pos-multiline-p))
+      (progn (forward-line 1)
+             (when (eobp)
+               (helm-beginning-of-buffer)
+               (recenter)))
+    (let ((line-num (line-number-at-pos)))
+      (helm-move--next-multi-line-fn)
+      (when (eq line-num (line-number-at-pos))
+        (helm-beginning-of-buffer)))))
+(defadvice helm-move--previous-line-fn (around
+                                        helm-css-scss--previous-line-cycle disable)
+  (if (not (helm-pos-multiline-p))
+      (forward-line -1)
+    (helm-move--previous-multi-line-fn))
+  (when (helm-pos-header-line-p)
+    (when (eq (point) (save-excursion (forward-line -1) (point)))
+      (helm-end-of-buffer)
+      (and (helm-pos-multiline-p) (helm-move--previous-multi-line-fn)))))
+
+(defadvice helm-next-line (around helm-css-scss-multi--next-line disable)
+  (let ((helm-move-to-line-cycle-in-source nil))
+    ad-do-it
+    (when (called-interactively-p 'any)
+      (helm-css-scss--move-line-action))))
+(defadvice helm-previous-line (around helm-css-scss-multi--previous-line disable)
+  (let ((helm-move-to-line-cycle-in-source nil))
+    ad-do-it
+    (when (called-interactively-p 'any)
+      (helm-css-scss--move-line-action))))
+
+(defun helm-css-scss--move-line-action ()
+  (with-helm-window
+    (let* (($key (helm-css-scss--trim-whitespace
+                  (buffer-substring-no-properties (point-at-bol) (point-at-eol))))
+           ($source (helm-get-current-source))
+           ($cand (assoc-default 'candidates $source))
+           ($buf (get-buffer (assoc-default 'name $source)))
+           ($prop (assoc-default $key $cand)))
+      ;; Synchronizing line position
+      (with-selected-window helm-css-scss-synchronizing-window
+        (with-current-buffer $buf
+          (when (not (eq $buf helm-css-scss-move-line-action-last-buffer))
+            (set-window-buffer nil $buf))
+          ;; (helm-css-scss--goto-line (line-number-at-pos (nth 3 $prop)))
+          (goto-char (car $prop))
+          (helm-css-scss--target-overlay-move (nth 3 $prop) (nth 4 $prop) $buf))
+        (setq helm-css-scss-move-line-action-last-buffer $buf)
+        (recenter)))))
+
+(defun helm-css-scss--multi ($candidate $query $buffers)
+  (or $candidate (setq $candidate nil)) ;; Avoid bytecompile error
+  (let (($buffs (or $buffers (helm-css-scss--get-buffer-list)))
+        $contents
+        $preserve-position
+        $preselect)
+    (mapc (lambda ($x)
+            (with-current-buffer $x
+              (let* (($buf $x)
+                     ($cont (helm-css-scss-selector-hash-to-list)))
+                (if (eq $x (buffer-name (current-buffer)))
+                    (setq $preselect $cont))
+                (setq $preserve-position
+                      (cons (cons $buf (point)) $preserve-position))
+                ;;(setq $cont (propertize $cont 'buffer-name $buf))
+                (setq
+                 $contents
+                 (cons
+                  `((name . ,$buf)
+                    (candidates . ,$cont)
+                    (action
+                     ("Goto open brace"  . (lambda ($po)
+                                             (switch-to-buffer ,$buf)
+                                             (goto-char (car $po)) (recenter)))
+                     ("Goto close brace" . (lambda ($po)
+                                             (switch-to-buffer ,$buf)
+                                             (goto-char (nth 1 $po)) (recenter))))
+                    (header-line . "helm-css-scss-multi"))
+                  $contents)))))
+          $buffs)
+    (unwind-protect
         (progn
-          (ad-disable-advice 'helm-next-line 'around 'helm-css-scss--next-line)
+          (helm-css-scss--set)
+          (ad-enable-advice 'helm-next-line 'around 'helm-css-scss-multi--next-line)
           (ad-activate 'helm-next-line)
-          (ad-disable-advice 'helm-previous-line
-                             'around 'helm-css-scss--previous-line)
+          (ad-enable-advice 'helm-previous-line
+                            'around 'helm-css-scss-multi--previous-line)
           (ad-activate 'helm-previous-line)
-          (setq helm-display-function helm-css-scss-tmp)
-          (delete-overlay helm-css-scss-overlay)
-          (setq helm-display-source-at-screen-top
-                helm-css-scss-at-screen-top)))))
+          (ad-enable-advice 'helm-move--next-line-fn 'around
+                            'helm-css-scss--next-line-cycle)
+          (ad-activate 'helm-move--next-line-fn)
+          (ad-enable-advice 'helm-move--previous-line-fn 'around
+                            'helm-css-scss--previous-line-cycle)
+          (ad-activate 'helm-move--previous-line-fn)
+          (let ((helm-display-source-at-screen-top nil)
+                (helm-display-function helm-css-scss-split-window-function))
+            (helm :sources $contents
+                  :buffer helm-css-scss-multi-buffer
+                  :input (or $query "")
+                  :prompt "Selector: "
+                  :preselect (helm-css-scss-current-selector $preselect)
+                  :candidate-number-limit helm-css-scss-candidate-number-limit)))
+      (progn
+        (helm-css-scss--restore)
+        (ad-disable-advice 'helm-next-line 'around 'helm-css-scss-multi--next-line)
+        (ad-activate 'helm-next-line)
+        (ad-disable-advice 'helm-previous-line
+                           'around 'helm-css-scss-multi--previous-line)
+        (ad-activate 'helm-previous-line)
+        (ad-disable-advice 'helm-move--next-line-fn 'around
+                           'helm-css-scss--next-line-cycle)
+        (ad-activate 'helm-move--next-line-fn)
+        (ad-disable-advice 'helm-move--previous-line-fn 'around
+                           'helm-css-scss--previous-line-cycle)
+        (ad-activate 'helm-move--previous-line-fn)
+        (mapc (lambda ($x)
+                (let (($current-buffer (buffer-name (current-buffer))))
+                  (with-current-buffer (car $x)
+                    ;; Delete overlay
+                    (delete-overlay helm-css-scss-overlay)
+                    ;; Restore each buffer's position
+                    (unless (equal (car $x) $current-buffer)
+                      (goto-char (cdr $x))))))
+              $preserve-position)))))
+
+(defun helm-css-scss--get-buffer-list ()
+  "Get all CSS/SCSS/LESS buffers currently open"
+  (let ($buflist)
+    (mapc (lambda ($buf)
+            (setq $buf (buffer-name $buf))
+            (if (string-match "\\.\\(s?css\\|less\\)$" $buf)
+                (setq $buflist (cons $buf $buflist))))
+          (buffer-list))
+    $buflist))
+
+(defun helm-css-scss-multi (&optional $query)
+  (interactive)
+  "Apply all CSS/SCSS/LESS buffers"
+  (if $query
+      (setq helm-css-scss-last-query $query)
+    (setq helm-css-scss-last-query ""))
+  (helm-css-scss--multi nil
+                        helm-css-scss-last-query
+                        (helm-css-scss--get-buffer-list)))
+
+(defun helm-css-scss-from-isearch ()
+"Invoke `helm-css-scss-multi' from isearch."
+  (interactive)
+  (let (($input (if isearch-regexp
+                    isearch-string
+                  (regexp-quote isearch-string))))
+    (helm-css-scss $input)))
+;; When doing isearch, hand the word over to helm-css-scss
+;; (define-key isearch-mode-map (kbd "s-i") 'helm-css-scss-from-isearch)
+
+(defun helm-css-scss-multi-from-helm-css-scss ()
+  "Invoke `helm-css-scss-multi' from helm-css-scss."
+  (interactive)
+  (helm-css-scss--restore)
+  (ad-disable-advice 'helm-next-line 'around 'helm-css-scss--next-line)
+  (ad-activate 'helm-next-line)
+  (ad-disable-advice 'helm-previous-line
+                     'around 'helm-css-scss--previous-line)
+  (ad-activate 'helm-previous-line)
+  (delete-overlay helm-css-scss-overlay)
+  (helm-quit-and-execute-action (lambda ($c)
+                                  (or $c (setq $c nil))
+                                  (helm-css-scss-multi helm-pattern))))
+
+;; For helm-resum ---------------------------------
+(defadvice helm-resume (around helm-css-scss-resume activate)
+  "Resume if the last used helm buffer is helm-css-scss-buffer"
+  (if (equal helm-last-buffer helm-css-scss-buffer) ;; 1
+      (if (boundp 'helm-css-scss-last-query)  ;; 2
+          (if (not (ad-get-arg 0)) ;; 3
+              (helm-css-scss helm-css-scss-last-query))
+        ;; Temporary apply second last buffer
+        (let ((helm-last-buffer (cadr helm-buffers))) ad-do-it)) ;; 2 else
+    ad-do-it) ;; 1 else
+    )
 
 (provide 'helm-css-scss)
 ;;; helm-css-scss.el ends here
