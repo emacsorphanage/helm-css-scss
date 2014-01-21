@@ -308,7 +308,7 @@ This function needs to call after latest helm-css-scss-overlay set."
                                $multi)))))
     ;; Extract selector include one-line-nesting (i.e. "div { p {...} }")
     (save-excursion
-      (skip-chars-backward "^{;\n")
+      (skip-chars-backward "^{};\n")
       (setq $po1 (point))
       ;; (setq $beg2 $po1)
       (skip-chars-forward "^{")
