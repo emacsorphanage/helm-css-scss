@@ -713,14 +713,23 @@ If $noexcursion is not-nil cursor doesn't move."
 ;; For helm-resum ---------------------------------
 (defadvice helm-resume (around helm-css-scss-resume activate)
   "Resume if the last used helm buffer is helm-css-scss-buffer"
-  (if (equal helm-last-buffer helm-css-scss-buffer) ;; 1
-      (if (boundp 'helm-css-scss-last-query)  ;; 2
-          (if (not (ad-get-arg 0)) ;; 3
+  (if (equal helm-last-buffer helm-css-scss-buffer)
+      (if (boundp 'helm-css-scss-last-query)
+          (if (not (ad-get-arg 0))
               (helm-css-scss helm-css-scss-last-query))
         ;; Temporary apply second last buffer
-        (let ((helm-last-buffer (cadr helm-buffers))) ad-do-it)) ;; 2 else
-    ad-do-it) ;; 1 else
-    )
+        (let ((helm-last-buffer (cadr helm-buffers))) ad-do-it))
+    ad-do-it))
+
+(defadvice helm-resume (around helm-css-scss-multi-resume activate)
+  "Resume if the last used helm buffer is helm-css-scss-multi-buffer"
+  (if (equal helm-last-buffer helm-css-scss-multi-buffer)
+      (if (boundp 'helm-css-scss-last-query)
+          (if (not (ad-get-arg 0))
+              (helm-css-scss-multi helm-css-scss-last-query))
+        ;; Temporary apply second last buffer
+        (let ((helm-last-buffer (cadr helm-buffers))) ad-do-it))
+    ad-do-it))
 
 (provide 'helm-css-scss)
 ;;; helm-css-scss.el ends here
