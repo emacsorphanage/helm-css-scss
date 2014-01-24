@@ -301,7 +301,6 @@ This function needs to call after latest helm-css-scss-overlay set."
       ;; (setq $beg2 $po1)
       (skip-chars-forward "^{")
       (setq $po2 (point))
-      (setq helm-css-scss-overlay-end $po2)
       (setq $str (buffer-substring-no-properties $po1 $po2))
       ;; i.e. "div { .box { p"  ->  " p"
       (setq $str (helm-css-scss-substruct-last-string $str "{\\|}"))
