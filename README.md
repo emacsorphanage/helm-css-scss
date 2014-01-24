@@ -1,6 +1,6 @@
 This program makes your CSS/SCSS/LESS coding faster and easier than ever. You can see all selectors at once powered by `helm.el`. 
 
-![helm-css-scss](https://github.com/ShingoFukuyama/helm-css-scss/raw/master/image/helm-css-scss.gif)
+![helm-css-scss](https://raw2.github.com/ShingoFukuyama/images/master/helm-css-scss.gif)
 
 ### Usage
 

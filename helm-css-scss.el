@@ -183,11 +183,11 @@
       (setq $text (substring $text (1+ (string-match $key $text)))))
   $text)
 
-(defsubst helm-css-scss--trim-whitespace ($s)
+(defsubst helm-css-scss--trim-whitespace ($str)
   "Return string without whitespace at the both beginning and end"
-  (if (string-match "\\`\\(?:\\s-+\\)?\\(.+?\\)\\(?:\\s-+\\)?\\'" $s)
-      (match-string 1 $s)
-    $s))
+  (if (string-match "\\`\\(?:\\s-+\\)?\\(.+?\\)\\(?:\\s-+\\)?\\'" $str)
+      (match-string 1 $str)
+    $str))
 
 (defsubst helm-css-scss--goto-line ($line)
   (goto-char (point-min))
@@ -221,9 +221,9 @@ This function needs to call after latest helm-css-scss-overlay set."
 
 ;;; scan selector -----------------------------
 
-(defun helm-css-scss-comment-p (&optional $point)
-  (or $point (setq $point (point)))
-  (nth 4 (parse-partial-sexp (point-min) $point)))
+(defun helm-css-scss-comment-p (&optional $pos)
+  (or $pos (setq $pos (point)))
+  (nth 4 (parse-partial-sexp (point-min) $pos)))
 
 (defun helm-css-scss-selector-to-hash ()
   "Collect all selectors and make hash table"
@@ -236,11 +236,7 @@ This function needs to call after latest helm-css-scss-overlay set."
         (setq $paren-beg (point))
         (setq $paren-end (scan-sexps $paren-beg 1))
         (setq $max (cons $paren-end $max))
-        (setq $max (mapcar (lambda (x)
-                             (if (< x $paren-beg)
-                                 nil
-                               x))
-                           $max))
+        (setq $max (mapcar (lambda ($p) (if (< $p $paren-beg) nil $p)) $max))
         (setq $max (delq nil $max))
         (setq $dep (length $max))
         (setq $selector-name (car $selector))
@@ -391,14 +387,14 @@ If $noexcursion is not-nil cursor doesn't move."
             do (progn (goto-char $end)
                       (insert (format " /*__ %s */" $sel)))))))
 
-(defun helm-css-scss-current-selector (&optional $list $point)
+(defun helm-css-scss-current-selector (&optional $list $pos)
   (interactive)
-  "Return selector that $point is in"
+  "Return selector that $pos is in"
   (unless $list (setq $list (helm-css-scss-selector-hash-to-list)))
-  (or $point (setq $point (point)))
+  (or $pos (setq $pos (point)))
   (let ($r1 $r2)
     (loop for ($sel $beg $end $dep) in $list
-          if (and (< $point $end) (>= $point $beg))
+          if (and (< $pos $end) (>= $pos $beg))
           do (progn (setq $r1 (cons (cons $dep $sel) $r1))
                     (setq $r2 (cons $dep $r2))))
     (helm-css-scss--target-overlay-move)
@@ -456,8 +452,10 @@ If $noexcursion is not-nil cursor doesn't move."
 (defun helm-c-source-helm-css-scss ($list)
   `((name . "CSS/Scss Selectors")
     (candidates . ,$list)
-    (action ("Goto open brace"  . (lambda ($po) (goto-char (car $po)) (recenter)))
-            ("Goto close brace" . (lambda ($po) (goto-char (nth 1 $po)) (recenter))))
+    (action ("Goto open brace"  . (lambda ($pos)
+                                    (goto-char (car $pos)) (recenter)))
+            ("Goto close brace" . (lambda ($pos)
+                                    (goto-char (nth 1 $pos)) (recenter))))
     (header-line . "helm-css-scss")
     (keymap . ,helm-css-scss-map)))
 
@@ -583,17 +581,15 @@ If $noexcursion is not-nil cursor doesn't move."
         (setq helm-css-scss-move-line-action-last-buffer $buf)
         (recenter)))))
 
-(defun helm-css-scss--multi ($candidate $query $buffers)
-  (or $candidate (setq $candidate nil)) ;; Avoid bytecompile error
+(defun helm-css-scss--multi (ignored $query $buffers)
   (let (($buffs (or $buffers (helm-css-scss--get-buffer-list)))
         $contents
         $preserve-position
         $preselect)
-    (mapc (lambda ($x)
-            (with-current-buffer $x
-              (let* (($buf $x)
-                     ($cont (helm-css-scss-selector-hash-to-list)))
-                (if (eq $x (buffer-name (current-buffer)))
+    (mapc (lambda ($buf)
+            (with-current-buffer $buf
+              (let* (($cont (helm-css-scss-selector-hash-to-list)))
+                (if (eq $buf (buffer-name (current-buffer)))
                     (setq $preselect $cont))
                 (setq $preserve-position
                       (cons (cons $buf (point)) $preserve-position))
@@ -648,14 +644,14 @@ If $noexcursion is not-nil cursor doesn't move."
         (ad-disable-advice 'helm-move--previous-line-fn 'around
                            'helm-css-scss--previous-line-cycle)
         (ad-activate 'helm-move--previous-line-fn)
-        (mapc (lambda ($x)
+        (mapc (lambda ($buf)
                 (let (($current-buffer (buffer-name (current-buffer))))
-                  (with-current-buffer (car $x)
+                  (with-current-buffer (car $buf)
                     ;; Delete overlay
                     (delete-overlay helm-css-scss-overlay)
                     ;; Restore each buffer's position
-                    (unless (equal (car $x) $current-buffer)
-                      (goto-char (cdr $x))))))
+                    (unless (equal (car $buf) $current-buffer)
+                      (goto-char (cdr $buf))))))
               $preserve-position)))))
 
 (defun helm-css-scss--get-buffer-list ()
@@ -698,8 +694,7 @@ If $noexcursion is not-nil cursor doesn't move."
                      'around 'helm-css-scss--previous-line)
   (ad-activate 'helm-previous-line)
   (delete-overlay helm-css-scss-overlay)
-  (helm-quit-and-execute-action (lambda ($c)
-                                  (or $c (setq $c nil))
+  (helm-quit-and-execute-action (lambda (ignored)
                                   (helm-css-scss-multi helm-pattern))))
 
 ;; For helm-resum ---------------------------------
