@@ -472,7 +472,7 @@ If $noexcursion is not-nil cursor doesn't move."
 (defun helm-css-scss--clear-cache ()
   "Clear cache when buffer saved"
   (if (boundp 'helm-css-scss-cache) (setq helm-css-scss-cache nil)))
-(add-hook 'around-save-hook 'helm-css-scss--clear-cache)
+(add-hook 'after-save-hook 'helm-css-scss--clear-cache)
 
 (defun helm-css-scss--set ()
   "Override helm's default behavior for helm-css-scss"
