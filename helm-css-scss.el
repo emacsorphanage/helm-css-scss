@@ -730,12 +730,13 @@ If $noexcursion is not-nil cursor doesn't move."
 
 (defun helm-css-scss--get-buffer-list ()
   "Get all CSS/SCSS/LESS buffers currently open"
-  (let ($buflist1)
+  (let ($buflist1 $file)
     (mapc (lambda ($buf)
-            (setq $buf (buffer-name $buf))
-            (unless (string-match "^\\s-" $buf)
-              (if (string-match "\\.\\(s?css\\|less\\)$" $buf)
-                  (setq $buflist1 (cons $buf $buflist1)))))
+            (setq $file (buffer-file-name $buf))
+            (and $file
+                 (not (string-match "^\\s-" $file))
+                 (string-match "\\.\\(s?css\\|less\\)$" $file)
+                 (setq $buflist1 (cons (buffer-name $buf) $buflist1))))
           (buffer-list))
     $buflist1))
 
