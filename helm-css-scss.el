@@ -734,7 +734,6 @@ If $noexcursion is not-nil cursor doesn't move."
     (mapc (lambda ($buf)
             (setq $file (buffer-file-name $buf))
             (and $file
-                 (not (string-match "^\\s-" $file))
                  (string-match "\\.\\(s?css\\|less\\)$" $file)
                  (setq $buflist1 (cons (buffer-name $buf) $buflist1))))
           (buffer-list))
