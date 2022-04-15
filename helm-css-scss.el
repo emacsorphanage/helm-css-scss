@@ -387,13 +387,13 @@ This function needs to call after latest helm-css-scss-overlay set."
 (cl-defun helm-css-scss-selector-next (&optional $bound)
   "Return and goto next selector."
   (unless (helm-css-scss-open-brace-forward $bound)
-    (return-from helm-css-scss-selector-next nil))
+    (cl-return-from helm-css-scss-selector-next nil))
   (helm-css-scss--extract-selector))
 
 (cl-defun helm-css-scss-selector-previous (&optional $bound)
   "Return and goto previous selector."
   (unless (helm-css-scss-open-brace-backward $bound)
-    (return-from helm-css-scss-selector-previous nil))
+    (cl-return-from helm-css-scss-selector-previous nil))
   (helm-css-scss--extract-selector))
 
 (cl-defun helm-css-scss-fetch-previous-line (&optional $prev $noexcursion)
@@ -401,7 +401,7 @@ This function needs to call after latest helm-css-scss-overlay set."
 If $noexcursion is not-nil cursor doesn't move."
   ;; In compressed Css without this return, it takes long time
   (if (eq 1 (line-number-at-pos))
-      (return-from helm-css-scss-fetch-previous-line ""))
+      (cl-return-from helm-css-scss-fetch-previous-line ""))
   (or $prev (setq $prev 1))
   (if $noexcursion (setq $noexcursion (point)))
   (move-beginning-of-line (- 1 $prev))
@@ -416,7 +416,7 @@ If $noexcursion is not-nil cursor doesn't move."
   "Move to next open brace, skip commented brace"
   (let ($ret)
     (setq $ret (re-search-forward "[^#]{" $bound t))
-    (unless $ret (return-from helm-css-scss-open-brace-forward nil))
+    (unless $ret (cl-return-from helm-css-scss-open-brace-forward nil))
     (backward-char)
     (if (and (helm-css-scss-comment-p (point))
              (not helm-css-scss-include-commented-selector))
@@ -428,7 +428,7 @@ If $noexcursion is not-nil cursor doesn't move."
   "Move to previous open brace, skip commented brace"
   (let ($ret)
     (setq $ret (re-search-backward "[^#]{" $bound t))
-    (unless $ret (return-from helm-css-scss-open-brace-backward nil))
+    (unless $ret (cl-return-from helm-css-scss-open-brace-backward nil))
     (forward-char)
     (if (and (helm-css-scss-comment-p (point))
              (not helm-css-scss-include-commented-selector))
