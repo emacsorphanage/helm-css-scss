@@ -350,7 +350,7 @@ This function needs to call after latest helm-css-scss-overlay set."
     (define-key $map (kbd "s-i") 'helm-css-scss-multi-from-helm-css-scss)
     (delq nil $map)))
 
-(defun* helm-css-scss--extract-selector ()
+(cl-defun helm-css-scss--extract-selector ()
   "Return selector infomation at the point"
   (let (($multi "") $s $po1 $po2 $po3 $str $commentp)
     ;; Collect multiple selector across previous lines
@@ -384,19 +384,19 @@ This function needs to call after latest helm-css-scss-overlay set."
         (cons (format "%s %s" (helm-css-scss--trim-whitespace $multi) $str)
               (cons $po3 $po2))))))
 
-(defun* helm-css-scss-selector-next (&optional $bound)
+(cl-defun helm-css-scss-selector-next (&optional $bound)
   "Return and goto next selector."
   (unless (helm-css-scss-open-brace-forward $bound)
     (return-from helm-css-scss-selector-next nil))
   (helm-css-scss--extract-selector))
 
-(defun* helm-css-scss-selector-previous (&optional $bound)
+(cl-defun helm-css-scss-selector-previous (&optional $bound)
   "Return and goto previous selector."
   (unless (helm-css-scss-open-brace-backward $bound)
     (return-from helm-css-scss-selector-previous nil))
   (helm-css-scss--extract-selector))
 
-(defun* helm-css-scss-fetch-previous-line (&optional $prev $noexcursion)
+(cl-defun helm-css-scss-fetch-previous-line (&optional $prev $noexcursion)
   "Return previous nth ($prev) line strings.
 If $noexcursion is not-nil cursor doesn't move."
   ;; In compressed Css without this return, it takes long time
@@ -411,7 +411,7 @@ If $noexcursion is not-nil cursor doesn't move."
     (if $noexcursion (goto-char $noexcursion))
     $res))
 
-(defun* helm-css-scss-open-brace-forward (&optional $bound)
+(cl-defun helm-css-scss-open-brace-forward (&optional $bound)
   (interactive)
   "Move to next open brace, skip commented brace"
   (let ($ret)
@@ -423,7 +423,7 @@ If $noexcursion is not-nil cursor doesn't move."
         (helm-css-scss-open-brace-forward $bound)
       $ret)))
 
-(defun* helm-css-scss-open-brace-backward (&optional $bound)
+(cl-defun helm-css-scss-open-brace-backward (&optional $bound)
   (interactive)
   "Move to previous open brace, skip commented brace"
   (let ($ret)
