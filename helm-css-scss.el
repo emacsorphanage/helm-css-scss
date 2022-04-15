@@ -790,7 +790,7 @@ If $noexcursion is not-nil cursor doesn't move."
                      'around 'helm-css-scss--previous-line)
   (ad-activate 'helm-previous-line)
   (delete-overlay helm-css-scss-overlay)
-  (helm-quit-and-execute-action (lambda (ignored)
+  (helm-exit-and-execute-action (lambda (ignored)
                                   (helm-css-scss-multi helm-pattern))))
 
 ;; For helm-resum ---------------------------------
