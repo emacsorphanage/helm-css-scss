@@ -62,6 +62,7 @@
 ;;; Code:
 
 (eval-when-compile (require 'cl))
+(require 'cl-lib)
 
 (require 'helm)
 
@@ -174,9 +175,9 @@
 
 (defun helm-css-scss-nthcar ($i $l)
   "Return n($i) of values from the head of a list($l)."
-  (loop for $k from 1 to $i
-        collect (nth (- $k 1) $l) into $res
-        finally return (delq nil $res)))
+  (cl-loop for $k from 1 to $i
+           collect (nth (- $k 1) $l) into $res
+           finally return (delq nil $res)))
 
 (defun helm-css-scss-substruct-last-string ($text $key)
   "Return the tail of $text without $key strings."
@@ -324,7 +325,7 @@ This function needs to call after latest helm-css-scss-overlay set."
         (setq $selector-end (cddr $selector))
         (setq $selector-line (line-number-at-pos $selector-beg))
         (if (<= $dep (length $sl))
-            (loop repeat (- (1+ (length $sl)) $dep) do (pop $sl)))
+            (cl-loop repeat (- (1+ (length $sl)) $dep) do (pop $sl)))
         (setq $sl (cons $selector-name $sl))
         (puthash (format "%s: %s"
                          (propertize (number-to-string
@@ -338,8 +339,8 @@ This function needs to call after latest helm-css-scss-overlay set."
 (defun helm-css-scss-selector-hash-to-list ()
   "Collected selector hash table to list."
   (let (($hash (helm-css-scss-selector-to-hash)))
-    (loop for $k being hash-key in $hash using (hash-values $v)
-          collect (cons $k $v))))
+    (cl-loop for $k being hash-key in $hash using (hash-values $v)
+             collect (cons $k $v))))
 
 ;;; core -----------------------------
 
@@ -435,28 +436,28 @@ If $noexcursion is not-nil cursor doesn't move."
       $ret)))
 
 ;;;###autoload
-(defun* helm-css-scss-insert-close-comment ($depth)
+(cl-defun helm-css-scss-insert-close-comment ($depth)
   (interactive (list (read-number
                       "Nest Depth: "
                       helm-css-scss-insert-close-comment-depth)))
   ;; Delete original comment for update comments
   (helm-css-scss-delete-all-matches-in-buffer "[ \t]?\\/\\*__.*?\\*\\/")
-  (if (<= $depth 0) (return-from helm-css-scss-insert-close-comment nil))
+  (if (<= $depth 0) (cl-return-from helm-css-scss-insert-close-comment nil))
   (let (($list (helm-css-scss-selector-to-hash))
         $r1 $r2 $ordered)
     (save-excursion
       ;; Extract selector and close-brace point
-      (loop for $k being hash-key in $list using (hash-values $v)
-            if (<= (caddr $v) $depth)
-            do (let (($v2 (cadr $v)))
-                 (setq $r1 (cons (cons $v2 $k) $r1))
-                 (setq $r2 (cons $v2 $r2))))
+      (cl-loop for $k being hash-key in $list using (hash-values $v)
+               if (<= (caddr $v) $depth)
+               do (let (($v2 (cadr $v)))
+                    (setq $r1 (cons (cons $v2 $k) $r1))
+                    (setq $r2 (cons $v2 $r2))))
       ;;(setq $hash (sort* $hash '> :key 'car))
       (setq $r2 (sort $r2 '<))
       (mapc (lambda ($x) (setq $ordered (cons (assoc $x $r1) $ordered))) $r2)
-      (loop for ($end . $sel) in $ordered
-            do (progn (goto-char $end)
-                      (insert (format " /*__ %s */" $sel)))))))
+      (cl-loop for ($end . $sel) in $ordered
+               do (progn (goto-char $end)
+			 (insert (format " /*__ %s */" $sel)))))))
 
 (defun helm-css-scss-current-selector (&optional $list $pos)
   "Current selector."
@@ -465,10 +466,10 @@ If $noexcursion is not-nil cursor doesn't move."
   (unless $list (setq $list (helm-css-scss-selector-hash-to-list)))
   (or $pos (setq $pos (point)))
   (let ($r1 $r2)
-    (loop for ($sel $beg $end $dep) in $list
-          if (and (< $pos $end) (>= $pos $beg))
-          do (progn (setq $r1 (cons (cons $dep $sel) $r1))
-                    (setq $r2 (cons $dep $r2))))
+    (cl-loop for ($sel $beg $end $dep) in $list
+             if (and (< $pos $end) (>= $pos $beg))
+             do (progn (setq $r1 (cons (cons $dep $sel) $r1))
+                       (setq $r2 (cons $dep $r2))))
     (helm-css-scss--target-overlay-move)
     (helm-css-scss--recenter)
     ;; Get the deepest selector
